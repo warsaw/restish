@@ -119,6 +119,9 @@ class URL(str):
             return self.parsed_url == urlparse.urlsplit(other)
         return False
 
+    def __hash__(self):
+        return super(URL, self).__hash__()
+
     @property
     def scheme(self):
         """ The url scheme (http, https, etc) """
