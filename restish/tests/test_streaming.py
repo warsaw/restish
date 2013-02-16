@@ -1,3 +1,6 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import cStringIO
 import StringIO
 import os
@@ -18,17 +21,17 @@ class Resource(resource.Resource):
 class TestStreaming(unittest.TestCase):
 
     def test_string(self):
-        R = webtest.TestApp(app.RestishApp(Resource('string'))).get('/')
+        R = webtest.TestApp(app.RestishApp(Resource(b'string'))).get('/')
         assert R.status.startswith('200')
         assert R.body == 'string'
 
     def test_stringio(self):
-        R = webtest.TestApp(app.RestishApp(Resource(StringIO.StringIO('stringio')))).get('/')
+        R = webtest.TestApp(app.RestishApp(Resource(StringIO.StringIO(b'stringio')))).get('/')
         assert R.status.startswith('200')
         assert R.body == 'stringio'
 
     def test_cstringio(self):
-        R = webtest.TestApp(app.RestishApp(Resource(cStringIO.StringIO('cstringio')))).get('/')
+        R = webtest.TestApp(app.RestishApp(Resource(cStringIO.StringIO(b'cstringio')))).get('/')
         assert R.status.startswith('200')
         assert R.body == 'cstringio'
 

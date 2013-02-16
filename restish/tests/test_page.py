@@ -1,3 +1,6 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import unittest
 import webtest
 
@@ -14,9 +17,9 @@ class TestElement(unittest.TestCase):
         def renderer(template, args, encoding=None):
             if template == 'page.html':
                 element = args['element']
-                return '<div>page.html%s</div>' % (element('foo')(),)
+                return b'<div>page.html%s</div>' % (element('foo')(),)
             elif template == 'element.html':
-                return '<p>element.html</p>'
+                return b'<p>element.html</p>'
         class Element(page.Element):
             @templating.element('element.html')
             def __call__(self, request):

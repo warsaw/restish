@@ -2,6 +2,9 @@
 HTTP Request and Response objects, simple Response factories and exceptions
 types for common HTTP errors.
 """
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import cgi
 import webob
 
@@ -90,8 +93,8 @@ class Response(webob.Response):
     default_content_type = None
 
     def __init__(self, status, headers, body):
-        kwargs = {'status': status,
-                  'headerlist': headers}
+        kwargs = {b'status': status,
+                  b'headerlist': headers}
         # XXX webob workaround. I can't see a way to create an empty response
         # *with* a content-length, as is common for a HEAD response. So, a
         # workaround is that if there is no body, i.e. None, then we capture
@@ -100,7 +103,7 @@ class Response(webob.Response):
         content_length = None
         if body is None:
             header_dict = dict([(key.lower(), val) for (key, val) in headers])
-            content_length = header_dict.get('content-length')
+            content_length = header_dict.get(b'content-length')
         elif isinstance(body, str):
             kwargs['body'] = body
         else:
@@ -108,7 +111,7 @@ class Response(webob.Response):
         webob.Response.__init__(self, **kwargs)
         # XXX webob workaround. see above
         if content_length is not None:
-            self.headers['Content-Length'] = content_length
+            self.headers[b'Content-Length'] = content_length
 
 
 # Successful 2xx
@@ -131,7 +134,7 @@ def ok(headers, body):
     TRACE an entity containing the request message as received by the end
     server.
     """
-    return Response("200 OK", headers, body)
+    return Response(b"200 OK", headers, body)
 
 
 def created(location, headers, body):
@@ -153,13 +156,13 @@ def created(location, headers, body):
     current value of the entity tag for the requested variant just created, see
     section 14.19.
     """
-    headers.append(('Location', location))
-    return Response("201 Created", headers, body)
+    headers.append((b'Location', location))
+    return Response(b"201 Created", headers, body)
 
 
 # Redirection 3xx
 
-_REDIRECTION_PAGE = """<html>
+_REDIRECTION_PAGE = b"""<html>
 <head>
 <meta http-equiv="content-type" content="text/html;charset=utf-8" />
 <title>%(status)s</title>
@@ -180,10 +183,10 @@ def _redirect(status, location, headers=None):
     """
     if not headers:
         headers = []
-    headers.extend([('Location', location),
-                    ('Content-Type', 'text/html')])
-    body = _REDIRECTION_PAGE % {"status": cgi.escape(status),
-                                "location": cgi.escape(location)}
+    headers.extend([(b'Location', location),
+                    (b'Content-Type', b'text/html')])
+    body = _REDIRECTION_PAGE % {b"status": cgi.escape(status),
+                                b"location": cgi.escape(location)}
     return Response(status, headers, body)
 
 
@@ -211,7 +214,7 @@ def moved_permanently(location, headers=None):
     301 status code, some existing HTTP/1.0 user agents will
     erroneously change it into a GET request.
     """
-    return _redirect("301 Moved Permanently", location, headers)
+    return _redirect(b"301 Moved Permanently", location, headers)
 
 
 def found(location, headers=None):
@@ -239,7 +242,7 @@ def found(location, headers=None):
     The status codes 303 and 307 have been added for servers that wish to make
     unambiguously clear which kind of reaction is expected of the client.
     """
-    return _redirect("302 Found", location, headers)
+    return _redirect(b"302 Found", location, headers)
 
 
 def see_other(location, headers=None):
@@ -263,7 +266,7 @@ def see_other(location, headers=None):
     used instead, since most user agents react to a 302 response as described
     here for 303.
     """
-    return _redirect("303 See Other", location, headers)
+    return _redirect(b"303 See Other", location, headers)
 
 
 def not_modified(headers=None):
@@ -305,7 +308,7 @@ def not_modified(headers=None):
     """
     if headers is None:
         headers = []
-    return Response("304 Not Modified", headers, None)
+    return Response(b"304 Not Modified", headers, None)
 
 
 # Client Error 4xx
@@ -318,9 +321,9 @@ def bad_request(headers=None, body=None):
     The client SHOULD NOT repeat the request without modifications.
     """
     if headers is None and body is None:
-        headers = [('Content-Type', 'text/plain')]
-        body = '400 Bad Request'
-    return Response("400 Bad Request", headers, body)
+        headers = [(b'Content-Type', b'text/plain')]
+        body = b'400 Bad Request'
+    return Response(b"400 Bad Request", headers, body)
 
 
 class BadRequestError(error.HTTPClientError):
@@ -345,7 +348,7 @@ def unauthorized(headers, body):
     authentication is explained in "HTTP Authentication: Basic and Digest
     Access Authentication" [43].
     """
-    return Response("401 Unauthorized", headers, body)
+    return Response(b"401 Unauthorized", headers, body)
 
 
 class UnauthorizedError(error.HTTPClientError):
@@ -366,9 +369,9 @@ def forbidden(headers=None, body=None):
     instead.
     """
     if headers is None and body is None:
-        headers = [('Content-Type', 'text/plain')]
-        body = '403 Forbidden'
-    return Response("403 Forbidden", headers, body)
+        headers = [(b'Content-Type', b'text/plain')]
+        body = b'403 Forbidden'
+    return Response(b"403 Forbidden", headers, body)
 
 
 class ForbiddenError(error.HTTPClientError):
@@ -389,9 +392,9 @@ def not_found(headers=None, body=None):
     when no other response is applicable.
     """
     if headers is None and body is None:
-        headers = [('Content-Type', 'text/plain')]
-        body = '404 Not Found'
-    return Response("404 Not Found", headers, body)
+        headers = [(b'Content-Type', b'text/plain')]
+        body = b'404 Not Found'
+    return Response(b"404 Not Found", headers, body)
 
 
 class NotFoundError(error.HTTPClientError):
@@ -408,10 +411,10 @@ def method_not_allowed(allow):
     containing a list of valid methods for the requested resource.
     """
     if isinstance(allow, list):
-        allow = ', '.join(allow)
-    return Response("405 Method Not Allowed",
-          [('Content-Type', 'text/plain'), \
-           ('Allow', allow)], "405 Method Not Allowed")
+        allow = b', '.join(allow)
+    return Response(b"405 Method Not Allowed",
+          [(b'Content-Type', b'text/plain'), \
+           (b'Allow', allow)], b"405 Method Not Allowed")
 
 
 class MethodNotAllowedError(error.HTTPClientError):
@@ -445,7 +448,7 @@ def not_acceptable(headers, body):
     If the response could be unacceptable, a user agent SHOULD temporarily stop
     receipt of more data and query the user for a decision on further actions.
     """
-    return Response('406 Not Acceptable', headers, body)
+    return Response(b'406 Not Acceptable', headers, body)
 
 
 class NotAcceptableError(error.HTTPClientError):
@@ -473,7 +476,7 @@ def conflict(headers, body):
     likely contain a list of the differences between the two versions in a
     format defined by the response Content-Type.
     """
-    return Response("409 Conflict", headers, body)
+    return Response(b"409 Conflict", headers, body)
 
 
 class ConflictError(error.HTTPClientError):
@@ -491,9 +494,9 @@ def internal_server_error(headers=None, body=None):
     fulfilling the request.
     """
     if headers is None and body is None:
-        headers = [('Content-Type', 'text/plain')]
-        body = '500 Internal Server Error'
-    return Response('500 Internal Server Error', headers, body)
+        headers = [(b'Content-Type', b'text/plain')]
+        body = b'500 Internal Server Error'
+    return Response(b'500 Internal Server Error', headers, body)
 
 
 class InternalServerError(error.HTTPServerError):
@@ -512,9 +515,9 @@ def bad_gateway(headers=None, body=None):
     request.
     """
     if headers is None and body is None:
-        headers = [('Content-Type', 'text/plain')]
-        body = '502 Bad Gateway'
-    return Response('502 Bad Gateway', headers, body)
+        headers = [(b'Content-Type', b'text/plain')]
+        body = b'502 Bad Gateway'
+    return Response(b'502 Bad Gateway', headers, body)
 
 
 class BadGatewayError(error.HTTPServerError):
@@ -536,9 +539,9 @@ def service_unavailable(headers=None, body=None):
     a 500 response.
     """
     if headers is None and body is None:
-        headers = [('Content-Type', 'text/plain')]
-        body = '503 Service Unavailable'
-    return Response('503 Service Unavailable', headers, body)
+        headers = [(b'Content-Type', b'text/plain')]
+        body = b'503 Service Unavailable'
+    return Response(b'503 Service Unavailable', headers, body)
 
 
 class ServiceUnavailableError(error.HTTPServerError):
@@ -558,9 +561,9 @@ def gateway_timeout(headers=None, body=None):
     attempting to complete the request.
     """
     if headers is None and body is None:
-        headers = [('Content-Type', 'text/plain')]
-        body = '504 Gateway Timeout'
-    return Response('504 Gateway Timeout', headers, body)
+        headers = [(b'Content-Type', b'text/plain')]
+        body = b'504 Gateway Timeout'
+    return Response(b'504 Gateway Timeout', headers, body)
 
 
 class GatewayTimeoutError(error.HTTPServerError):

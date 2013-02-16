@@ -5,6 +5,9 @@ A TempitaRenderer instance can be used as the renderer passed to the
 templating.Templating instance that is added to the WSGI environ.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import os.path
 import tempita
 

@@ -1,3 +1,6 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import unittest
 import webtest
 
@@ -6,7 +9,11 @@ from restish import app, http, util
 
 def wsgi_app(environ, start_response):
     start_response('200 OK', [('Content-Type', 'text/plain')])
-    return 'SCRIPT_NAME: %(SCRIPT_NAME)s, PATH_INFO: %(PATH_INFO)s' % environ
+    # Convert the environ elements we're interested into bytes, since the body
+    # wants to be a bytes object.  UTF-8 I guess.
+    script_name = environ.get('SCRIPT_NAME', '').encode('utf-8')
+    path_info = environ.get('PATH_INFO', '').encode('utf-8')
+    return b'SCRIPT_NAME: {0}, PATH_INFO: {1}'.format(script_name, path_info)
 
 
 class TestWSGI(unittest.TestCase):

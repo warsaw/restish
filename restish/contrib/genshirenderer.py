@@ -23,6 +23,9 @@ method ("xml", "xhtml", "html", "text", etc) to be specified. Think carefully
 before using this class.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 from genshi.template.loader import TemplateLoader
 
 

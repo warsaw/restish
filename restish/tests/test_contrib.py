@@ -1,5 +1,8 @@
 # ~*~ coding: utf-8
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import os.path
 import shutil
 import tempfile
@@ -19,7 +22,7 @@ class TestApplicationURLAccessor(unittest.TestCase):
         app_urls = appurl.ApplicationURLAccessor(http.Request.blank('/'),
                                                  Module())
         self.assertTrue(app_urls.news)
-        self.assertEquals(app_urls.news(), '/news')
+        self.assertEquals(app_urls.news(), b'/news')
 
     def test_args(self):
         class Module(object):
@@ -27,7 +30,7 @@ class TestApplicationURLAccessor(unittest.TestCase):
                 return request.application_path.child(foo, bar)
         app_urls = appurl.ApplicationURLAccessor(http.Request.blank('/'),
                                                  Module())
-        self.assertEquals(app_urls.args('foo', bar='bar'), '/foo/bar')
+        self.assertEquals(app_urls.args('foo', bar='bar'), b'/foo/bar')
 
     def test_private(self):
         class Module(object):
@@ -64,22 +67,20 @@ class RendererTestMixin(object):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.add_content('static', "<p>A '£' symbol often breaks web pages.</p>".decode('utf-8'))
+        self.add_content('static', "<p>A '£' symbol often breaks web pages.</p>")
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def add_content(self, name, content):
-        f = file(os.path.join(self.tmpdir, name), 'w')
-        f.write(content.encode('utf-8'))
-        f.close()
+        with open(os.path.join(self.tmpdir, name), 'w') as f:
+            f.write(content.encode('utf-8'))
 
     def content(self, name, encoding=None):
-        f = file(os.path.join(self.tmpdir, name))
-        content = f.read().decode('utf-8')
+        with open(os.path.join(self.tmpdir, name)) as f:
+            content = f.read().decode('utf-8')
         if encoding:
             content = content.encode(encoding)
-        f.close()
         return content
 
     def test_render(self):

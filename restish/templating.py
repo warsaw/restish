@@ -2,11 +2,14 @@
 Templating support.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 from restish import http, url, util
 from restish.page import Element
 
 
-class Templating(object):
+class Templating:
 
     def __init__(self, renderer):
         self.renderer = renderer or _missing_renderer

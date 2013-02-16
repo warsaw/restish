@@ -2,6 +2,10 @@
 Page resource.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
+
 import inspect
 
 from restish import resource
@@ -49,7 +53,7 @@ def _gather_element_factories(cls, clsattrs):
         cls.element_factories[name] = callable
 
 
-class ElementMixin(object):
+class ElementMixin:
     """
     Mixin to allow the use of element lookups on the resource
     """
@@ -81,7 +85,7 @@ class Page(ElementMixin, resource.Resource):
     __metaclass__ = _metaPage
 
 
-class Element(ElementMixin, object):
+class Element(ElementMixin):
     """ Define a base Element type that is just an element """
     __metaclass__ = _metaElement
 

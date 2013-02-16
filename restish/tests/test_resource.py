@@ -4,6 +4,9 @@
 Test resource behaviour.
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import unittest
 import webtest
 
@@ -18,27 +21,31 @@ class TestResourceFunc(unittest.TestCase):
 
     def test_anything(self):
         def func(request):
-            return http.ok([('Content-Type', 'text/plain')], 'Hello')
-        response = make_app(func).get('/', status=200)
+            return http.ok([(b'Content-Type', b'text/plain')], b'Hello')
+        response = make_app(func).get(b'/', status=200)
         assert response.body == 'Hello'
-        response = make_app(func).post('/', status=200)
+        app = make_app(func)
+        app.post(b'/', status=200)
+        response = make_app(func).post(b'/', status=200)
         assert response.body == 'Hello'
 
     def test_method_match(self):
         @resource.GET()
         def func(request):
-            return http.ok([('Content-Type', 'text/plain')], 'Hello')
-        response = make_app(func).get('/', status=200)
+            return http.ok([(b'Content-Type', b'text/plain')], b'Hello')
+        response = make_app(func).get(b'/', status=200)
         assert response.body == 'Hello'
-        response = make_app(func).post('/', status=405)
+        response = make_app(func).post(b'/', status=405)
 
     def test_accept_match(self):
-        @resource.GET(accept='text/plain')
+        @resource.GET(accept=b'text/plain')
         def func(request):
-            return http.ok([], 'Hello')
-        response = make_app(func).get('/', headers={'Accept': 'text/plain'}, status=200)
+            return http.ok([], b'Hello')
+        response = make_app(func).get(
+            '/', headers={'Accept': b'text/plain'}, status=200)
         assert response.body == 'Hello'
-        response = make_app(func).get('/', headers={'Accept': 'text/html'}, status=406)
+        response = make_app(func).get(
+            '/', headers={'Accept': b'text/html'}, status=406)
 
 
 class TestResourceMetaclass(unittest.TestCase):
@@ -98,59 +105,59 @@ class TestResource(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def GET(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'GET')
+                return http.ok([(b'Content-Type', b'text/plain')], b'GET')
             @resource.POST()
             def POST(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'POST')
+                return http.ok([(b'Content-Type', b'text/plain')], b'POST')
             @resource.PUT()
             def PUT(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'PUT')
+                return http.ok([(b'Content-Type', b'text/plain')], b'PUT')
             @resource.DELETE()
             def DELETE(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'DELETE')
+                return http.ok([(b'Content-Type', b'text/plain')], b'DELETE')
         for method in ['GET', 'POST', 'PUT', 'DELETE']:
             app = make_app(Resource())
-            response = getattr(app, method.lower())('/', status=200)
+            response = getattr(app, method.lower())(b'/', status=200)
             assert response.body == method
 
     def test_derived(self):
         class Base(resource.Resource):
             @resource.GET(accept='text')
             def text(self, request):
-                return http.ok([], 'Base')
+                return http.ok([], b'Base')
             @resource.GET(accept='html')
             def html(self, request):
-                return http.ok([], '<p>Base</p>')
+                return http.ok([], b'<p>Base</p>')
         class Derived(Base):
             @resource.GET(accept='html')
             def html(self, request):
-                return http.ok([], '<p>Derived</p>')
+                return http.ok([], b'<p>Derived</p>')
             @resource.GET(accept='json')
             def json(self, request):
-                return http.ok([], '"Derived"')
+                return http.ok([], b'"Derived"')
         app = make_app(Derived())
-        assert app.get('/', headers={'Accept': 'text/plain'}, status=200).body == 'Base'
-        assert app.get('/', headers={'Accept': 'text/html'}, status=200).body == '<p>Derived</p>'
-        assert app.get('/', headers={'Accept': 'application/json'}, status=200).body == '"Derived"'
+        assert app.get('/', headers={'Accept': b'text/plain'}, status=200).body == 'Base'
+        assert app.get('/', headers={'Accept': b'text/html'}, status=200).body == '<p>Derived</p>'
+        assert app.get('/', headers={'Accept': b'application/json'}, status=200).body == '"Derived"'
 
     def test_derived_specificity(self):
         class Base(resource.Resource):
             @resource.GET(accept='text/*')
             def text(self, request):
-                return http.ok([('Content-Type', 'text/html')], 'Base')
+                return http.ok([('Content-Type', 'text/html')], b'Base')
         class Derived(Base):
-            @resource.GET(accept='text/plain')
+            @resource.GET(accept=b'text/plain')
             def html(self, request):
-                return http.ok([], 'Derived')
+                return http.ok([], b'Derived')
         app = make_app(Derived())
-        assert app.get('/', headers={'Accept': 'text/plain'}, status=200).body == 'Derived'
-        assert app.get('/', headers={'Accept': 'text/html'}, status=200).body == 'Base'
+        assert app.get('/', headers={'Accept': b'text/plain'}, status=200).body == 'Derived'
+        assert app.get('/', headers={'Accept': b'text/html'}, status=200).body == 'Base'
 
     def test_default_head(self):
         class Resource(resource.Resource):
             @resource.GET()
             def text(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'text')
+                return http.ok([('Content-Type', 'text/plain')], b'text')
         get_response = Resource()(http.Request.blank('/', environ={'REQUEST_METHOD': 'GET'}))
         head_response = Resource()(http.Request.blank('/', environ={'REQUEST_METHOD': 'HEAD'}))
         assert head_response.headers['content-length'] == get_response.headers['content-length']
@@ -166,7 +173,7 @@ class TestResource(unittest.TestCase):
         class Second(resource.Resource):
             @resource.GET()
             def GET(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'text')
+                return http.ok([('Content-Type', 'text/plain')], b'text')
         head_response = First()(http.Request.blank('/', environ={'REQUEST_METHOD': 'HEAD'}))
         assert head_response.status == '200 OK'
         assert head_response.headers['content-length'] == '4'
@@ -188,10 +195,10 @@ class TestResource(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def text(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'text')
+                return http.ok([('Content-Type', 'text/plain')], b'text')
         app = make_app(Resource())
-        assert app.get('/', headers={'Accept': 'text/html, text/plain,'}, status=200).body == 'text'
-        assert app.get('/', headers={'Accept': 'text/html, text/plain;'}, status=200).body == 'text'
+        assert app.get('/', headers={'Accept': b'text/html, text/plain,'}, status=200).body == 'text'
+        assert app.get('/', headers={'Accept': b'text/html, text/plain;'}, status=200).body == 'text'
 
 
 class TestChildLookup(unittest.TestCase):
@@ -221,7 +228,9 @@ class TestChildLookup(unittest.TestCase):
             def nameless_child(self, request, segments):
                 return self.__class__(self.segments + [''])
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], '/'.join(self.segments))
+                joined_segments = '/'.join(self.segments)
+                return http.ok([('Content-Type', 'text/plain')],
+                               joined_segments.encode('utf-8'))
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/foo/')
         assert R.status.startswith('200')
@@ -238,7 +247,9 @@ class TestChildLookup(unittest.TestCase):
             def implicitly_named_child(self, request, segments):
                 return self.__class__(self.segments + ['implicitly_named_child'])
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], '/'.join(self.segments))
+                joined_segments = '/'.join(self.segments)
+                return http.ok([('Content-Type', 'text/plain')],
+                               joined_segments.encode('utf-8'))
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/implicitly_named_child')
         assert R.status.startswith('200')
@@ -255,7 +266,9 @@ class TestChildLookup(unittest.TestCase):
             def find_me_a_child_with_unicode(self, request, segments):
                 return self.__class__(self.segments + ['explicitly_named_child_with_unicode'])
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], '/'.join(self.segments))
+                joined_segments = '/'.join(self.segments)
+                return http.ok([('Content-Type', 'text/plain')],
+                               joined_segments.encode('utf-8'))
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/explicitly_named_child')
         assert R.status.startswith('200')
@@ -305,7 +318,7 @@ class TestChildLookup(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.child('[0-9]*+')
             def static_child(self, request, segments):
-                return http.ok([('Content-Type', 'text/plain')], 'static')
+                return http.ok([('Content-Type', 'text/plain')], b'static')
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/[0-9]*+')
         assert R.status.startswith('200')
@@ -320,12 +333,17 @@ class TestChildLookup(unittest.TestCase):
             def dynamic_child(self, request, segments, **kwargs):
                 return self.__class__(self.segments + ['users', kwargs['username']] + segments, kwargs), []
             def __call__(self, request):
-                body = '%r %r' % (self.segments, self.args)
+                # Must return bytes objects.
+                byte_segments = (', '.join(self.segments)).encode('utf-8')
+                byte_args = ', '.join(
+                    '%s: %s' % (key, value)
+                    for key, value in self.args.items()).encode('utf-8')
+                body = b'[' + byte_segments + b'] {' + byte_args + b'}'
                 return http.ok([('Content-Type', 'text/plain')], body)
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/users/foo')
         assert R.status.startswith('200')
-        assert R.body == "['users', u'foo'] {'username': u'foo'}"
+        self.assertEqual(R.body, "[users, foo] {username: foo}")
 
     def test_any_match(self):
         class Resource(resource.Resource):
@@ -335,11 +353,14 @@ class TestChildLookup(unittest.TestCase):
             def any_child(self, request, segments):
                 return self.__class__(self.segments + segments), []
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], '%r' % (self.segments,))
+                # Must return a bytes object.
+                joined_segments = (', '.join(self.segments)).encode('utf-8')
+                body = b'[' + joined_segments + b']'
+                return http.ok([('Content-Type', 'text/plain')], body)
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/foo')
         assert R.status.startswith('200')
-        assert R.body == "[u'foo']"
+        self.assertEqual(R.body, "[foo]")
 
     def test_specificity(self):
         """
@@ -411,14 +432,14 @@ class TestChildLookup(unittest.TestCase):
             def GET(self, request):
                 return http.ok([('Content-Type', 'text/plain')], self.match.encode('utf-8'))
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/%C2%A3')
-        assert R.body == '£'
+        R = webtest.TestApp(A).get(b'/%C2%A3')
+        self.assertEqual(R.body, u'£'.encode('utf-8'))
 
     def test_child_is_a_response(self):
         class Resource(resource.Resource):
             @resource.child()
             def foo(self, request, segments):
-                return http.ok([('Content-Type', 'text/plain')], 'foobar')
+                return http.ok([('Content-Type', 'text/plain')], b'foobar')
         # Check a leaf child (no more segments).
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/foo')
@@ -429,7 +450,8 @@ class TestChildLookup(unittest.TestCase):
         assert R.body == 'foobar'
 
     def test_root_is_a_response(self):
-        A = app.RestishApp(http.ok([('Content-Type', 'text/plain')], 'foobar'))
+        A = app.RestishApp(http.ok(
+            [('Content-Type', 'text/plain')], b'foobar'))
         R = webtest.TestApp(A).get('/foo')
         assert R.body == 'foobar'
 
@@ -443,9 +465,9 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='text/json')
             def html(self, request):
-                return http.ok([], '<p>Hello!</p>')
+                return http.ok([], b'<p>Hello!</p>')
         response = make_app(Resource()).get('/',
-                                            headers={'Accept': 'text/plain'},
+                                            headers={'Accept': b'text/plain'},
                                             status=406)
 
     def test_implicit_content_type(self):
@@ -455,7 +477,7 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='text/html')
             def html(self, request):
-                return http.ok([], '<p>Hello!</p>')
+                return http.ok([], b'<p>Hello!</p>')
         response = make_app(Resource()).get('/')
         assert response.headers['Content-Type'] == 'text/html'
 
@@ -482,7 +504,7 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='text/html')
             def html(self, request):
-                return http.ok([('Content-Type', 'text/plain')], '<p>Hello!</p>')
+                return http.ok([('Content-Type', 'text/plain')], b'<p>Hello!</p>')
         response = make_app(Resource()).get('/')
         assert response.headers['Content-Type'] == 'text/plain'
 
@@ -494,7 +516,7 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def html(self, request):
-                return http.ok([('Content-Type', 'text/html')], "<html />")
+                return http.ok([('Content-Type', 'text/html')], b"<html />")
         response = make_app(Resource()).get('/', status=200)
         assert response.headers['Content-Type'] == 'text/html'
 
@@ -505,8 +527,8 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def html(self, request):
-                return http.ok([('Content-Type', 'text/html')], "<html />")
-        response = make_app(Resource()).get('/', headers=[('Accept', '')], status=200)
+                return http.ok([('Content-Type', 'text/html')], b"<html />")
+        response = make_app(Resource()).get('/', headers=[('Accept', b'')], status=200)
         assert response.headers['Content-Type'] == 'text/html'
 
     def test_accept_match(self):
@@ -517,11 +539,11 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def html(self, request):
-                return http.ok([('Content-Type', 'text/html')], "<html />")
+                return http.ok([('Content-Type', 'text/html')], b"<html />")
             @resource.GET(accept='application/json')
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], "{}")
-        make_app(Resource()).get('/', headers=[('Accept', 'application/json')], status=200)
+                return http.ok([('Content-Type', 'application/json')], b"{}")
+        make_app(Resource()).get('/', headers=[('Accept', b'application/json')], status=200)
 
     def test_accept_non_match(self):
         """
@@ -531,11 +553,11 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def html(self, request):
-                return http.ok([('Content-Type', 'text/html')], "<html />")
+                return http.ok([('Content-Type', 'text/html')], b"<html />")
             @resource.GET(accept='application/json')
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], "{}")
-        response = make_app(Resource()).get('/', headers=[('Accept', 'text/html')], status=200)
+                return http.ok([('Content-Type', 'application/json')], b"{}")
+        response = make_app(Resource()).get('/', headers=[('Accept', b'text/html')], status=200)
         assert response.headers['Content-Type'] == 'text/html'
 
     def test_default_match(self):
@@ -546,10 +568,10 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='html')
             def html(self, request):
-                return http.ok([], '<p>Hello!</p>')
+                return http.ok([], b'<p>Hello!</p>')
             @resource.GET(accept='json')
             def json(self, request):
-                return http.ok([], '"Hello!"')
+                return http.ok([], b'"Hello!"')
         response = make_app(Resource()).get('/', status=200)
         assert response.headers['Content-Type'] == 'text/html'
 
@@ -560,8 +582,8 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='text/*')
             def html(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'Hello!')
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/plain'}, status=200)
+                return http.ok([('Content-Type', 'text/plain')], b'Hello!')
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/plain'}, status=200)
         assert response.headers['Content-Type'] == 'text/plain'
 
     def test_quality(self):
@@ -571,23 +593,24 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='text/html')
             def html(self, request):
-                return http.ok([('Content-Type', 'text/html')], '<p>Hello!</p>')
+                return http.ok([('Content-Type', 'text/html')],
+                               b'<p>Hello!</p>')
             @resource.GET(accept='text/plain')
             def plain(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'Hello!')
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html;q=0.9,text/plain'})
+                return http.ok([('Content-Type', 'text/plain')], b'Hello!')
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html;q=0.9,text/plain'})
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/plain'
         self.assertEquals(response.app_iter, ['Hello!'])
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/plain,text/html;q=0.9'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/plain,text/html;q=0.9'})
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/plain'
         self.assertEquals(response.app_iter, ['Hello!'])
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html;q=0.4,text/plain;q=0.5'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html;q=0.4,text/plain;q=0.5'})
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/plain'
         self.assertEquals(response.app_iter, ['Hello!'])
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html;q=0.5,text/plain;q=0.4'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html;q=0.5,text/plain;q=0.4'})
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/html'
         self.assertEquals(response.app_iter, ['<p>Hello!</p>'])
@@ -604,7 +627,7 @@ class TestAcceptContentNegotiation(unittest.TestCase):
             @resource.GET(accept='json')
             def aaa(self, request):
                 return http.ok([('Content-Type', 'application/json')], '')
-        response = make_app(Resource()).get('/', headers={'Accept': '*/*, application/json, text/javascript'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'*/*, application/json, text/javascript'})
         self.assertEquals(response.status, "200 OK")
         self.assertEquals(response.headers['Content-Type'], 'application/json')
 
@@ -616,16 +639,16 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def anything(self, request):
-                return http.ok([('Content-Type', 'text/html')], '<p>Hello!</p>')
+                return http.ok([('Content-Type', 'text/html')], b'<p>Hello!</p>')
             @resource.GET(accept='text/*')
             def html(self, request):
-                return http.ok([('Content-Type', 'text/plain')], 'Hello!')
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/plain'})
+                return http.ok([('Content-Type', 'text/plain')], b'Hello!')
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/plain'})
         self.assertEquals(response.status, "200 OK")
         self.assertEquals(response.headers['Content-Type'], 'text/plain')
         self.assertEquals(response.app_iter, ['Hello!'])
 
-        response = make_app(Resource()).get('/', headers={'Accept': 'application/xml'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'application/xml'})
         self.assertEquals(response.status, "200 OK")
         self.assertEquals(response.headers['Content-Type'], 'text/html')
         self.assertEquals(response.app_iter, ['<p>Hello!</p>'])
@@ -640,8 +663,8 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST()
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], 'json')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/json'},
+                return http.ok([('Content-Type', 'application/json')], b'json')
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/json'},
                                              status=200)
         assert response.body == 'json'
 
@@ -652,8 +675,8 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST(content_type='application/json')
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], 'json')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/json'},
+                return http.ok([('Content-Type', 'application/json')], b'json')
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/json'},
                                              status=200)
         assert response.body == 'json'
 
@@ -664,8 +687,8 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST(content_type=['json'])
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], 'json')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/json'},
+                return http.ok([('Content-Type', 'application/json')], b'json')
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/json'},
                                              status=200)
         assert response.body == 'json'
 
@@ -676,14 +699,14 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST(content_type=['json'])
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], 'json')
+                return http.ok([('Content-Type', 'application/json')], b'json')
             @resource.POST(content_type=['xml'])
             def xml(self, request):
-                return http.ok([('Content-Type', 'application/xml')], 'xml')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/json'},
+                return http.ok([('Content-Type', 'application/xml')], b'xml')
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/json'},
                                              status=200)
         assert response.body == 'json'
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/xml'},
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/xml'},
                                              status=200)
         assert response.body == 'xml'
 
@@ -694,8 +717,9 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST(content_type=['json'])
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], 'json')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/xml'},
+                return http.ok([('Content-Type', 'application/json')], b'json')
+        response = make_app(Resource()).post(
+            b'/', headers={'Content-Type': b'application/xml'},
                                              status=406)
 
     def test_specificity(self):
@@ -705,20 +729,20 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST(content_type='image/*')
             def image_any(self, request):
-                return http.ok([('Content-Type', 'image/png')], 'image/*')
+                return http.ok([('Content-Type', 'image/png')], b'image/*')
             @resource.POST(content_type='image/png')
             def image_png(self, request):
-                return http.ok([('Content-Type', 'image/png')], 'image/png')
+                return http.ok([('Content-Type', 'image/png')], b'image/png')
             @resource.POST()
             def anything(self, request):
-                return http.ok([('Content-Type', 'image/png')], '*/*')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'image/png'},
+                return http.ok([('Content-Type', 'image/png')], b'*/*')
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'image/png'},
                                              status=200)
         assert response.body == 'image/png'
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'image/jpeg'},
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'image/jpeg'},
                                              status=200)
         assert response.body == 'image/*'
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'text/plain'},
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'text/plain'},
                                              status=200)
         assert response.body == '*/*'
 
@@ -733,8 +757,8 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST()
             def json(self, request):
-                return http.ok([('Content-Type', 'application/json')], 'json')
-        response = make_app(Resource()).post('/', headers={'Content-Type': ''}, status=200)
+                return http.ok([('Content-Type', 'application/json')], b'json')
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b''}, status=200)
         assert response.body == 'json'
 
     def test_content_type_and_accept(self):
@@ -744,14 +768,15 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.POST(accept='json', content_type='json')
             def json_in_json_out(self, request):
-                return http.ok([('Content-Type', 'application/json')], 'json_in_json_out')
+                return http.ok([('Content-Type', 'application/json')],
+                               b'json_in_json_out')
             @resource.POST(accept='html', content_type='json')
             def json_in_html_out(self, request):
-                return http.ok([], 'json_in_html_out')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/json', 'Accept': 'text/html'}, status=200)
+                return http.ok([], b'json_in_html_out')
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/json', 'Accept': b'text/html'}, status=200)
         assert response.headers['Content-Type'] == 'text/html'
         assert response.body == 'json_in_html_out'
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, status=200)
+        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/json', 'Accept': b'application/json'}, status=200)
         assert response.headers['Content-Type'] == 'application/json'
         assert response.body == 'json_in_json_out'
 
@@ -762,34 +787,34 @@ class TestAcceptLists(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept=['text/html', 'application/xhtml+xml'])
             def html(self, request):
-                return http.ok([], '<html />')
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html'})
+                return http.ok([], b'<html />')
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html'})
         assert response.status == "200 OK"
-        response = make_app(Resource()).get('/', headers={'Accept': 'application/xhtml+xml'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'application/xhtml+xml'})
         assert response.status == "200 OK"
 
     def test_auto_content_type(self):
         class Resource(resource.Resource):
             @resource.GET(accept=['text/html', 'application/xhtml+xml'])
             def html(self, request):
-                return http.ok([], '<html />')
+                return http.ok([], b'<html />')
         # Check specific accept type.
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html'})
         assert response.headers['content-type'] == 'text/html'
         # Check other specific accept type.
-        response = make_app(Resource()).get('/', headers={'Accept': 'application/xhtml+xml'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'application/xhtml+xml'})
         assert response.headers['content-type'] == 'application/xhtml+xml'
         # Check the server's first accept match type is used if the client has
         # no strong preference whatever order the accept header lists types.
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html,application/xhtml+xml'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html,application/xhtml+xml'})
         assert response.headers['content-type'] == 'text/html'
-        response = make_app(Resource()).get('/', headers={'Accept': 'application/xhtml+xml,text/html'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'application/xhtml+xml,text/html'})
         assert response.headers['content-type'] == 'text/html'
         # Client accepts both but prefers one.
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html,application/xhtml+xml;q=0.9'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html,application/xhtml+xml;q=0.9'})
         assert response.headers['content-type'] == 'text/html'
         # Client accepts both but prefers other.
-        response = make_app(Resource()).get('/', headers={'Accept': 'text/html;q=0.9,application/xhtml+xml'})
+        response = make_app(Resource()).get('/', headers={'Accept': b'text/html;q=0.9,application/xhtml+xml'})
         assert response.headers['content-type'] == 'application/xhtml+xml'
 
 
@@ -802,8 +827,8 @@ class TestShortAccepts(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='html')
             def html(self, request):
-                return http.ok([], "<html />")
-        response = make_app(Resource()).get('/', headers=[('Accept', 'text/html')])
+                return http.ok([], b"<html />")
+        response = make_app(Resource()).get('/', headers=[(b'Accept', b'text/html')])
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/html'
 
@@ -814,8 +839,8 @@ class TestShortAccepts(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='json')
             def json(self, request):
-                return http.ok([], "{}")
-        response = make_app(Resource()).get('/', headers=[('Accept', 'application/json')])
+                return http.ok([], b"{}")
+        response = make_app(Resource()).get('/', headers=[(b'Accept', b'application/json')])
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'application/json'
 
@@ -826,7 +851,7 @@ class TestShortAccepts(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='unknown')
             def unknown(self, request):
-                return http.ok([], "{}")
+                return http.ok([], b"{}")
         response = make_app(Resource()).get('/')
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'unknown'

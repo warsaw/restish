@@ -2,6 +2,10 @@
 Base Resource class and associates methods for children and content negotiation
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
+
 import mimetypes
 import re
 import mimeparse
@@ -15,7 +19,7 @@ _RESTISH_MATCH = "restish_match"
 
 
 SHORT_CONTENT_TYPE_EXTRA = {
-        'json': 'application/json',
+        b'json': b'application/json',
         }
 
 
@@ -81,14 +85,14 @@ class MethodDecorator(object):
 
     method = None
 
-    def __init__(self, accept='*/*', content_type='*/*'):
+    def __init__(self, accept=b'*/*', content_type=b'*/*'):
         if not isinstance(accept, list):
             accept = [accept]
         if not isinstance(content_type, list):
             content_type = [content_type]
         accept = [_normalise_mimetype(a) for a in accept]
         content_type = [_normalise_mimetype(a) for a in content_type]
-        self.match = {'accept': accept, 'content_type': content_type}
+        self.match = {b'accept': accept, b'content_type': content_type}
 
     def __call__(self, func):
         wrapper = ResourceMethodWrapper(func)
@@ -125,8 +129,8 @@ class ResourceMethodWrapper(object):
         if dispatcher is not None:
             return _dispatch(request, match, self.func)
         # No dispatcher.
-        return http.not_acceptable([('Content-Type', 'text/plain')], \
-                                   '406 Not Acceptable')
+        return http.not_acceptable([(b'Content-Type', b'text/plain')], \
+                                   b'406 Not Acceptable')
 
 
 def _normalise_mimetype(mimetype):
@@ -149,27 +153,27 @@ def _normalise_mimetype(mimetype):
 
 class DELETE(MethodDecorator):
     """ http DELETE method """
-    method = 'DELETE'
+    method = b'DELETE'
 
 
 class GET(MethodDecorator):
     """ http GET method """
-    method = 'GET'
+    method = b'GET'
 
 
 class HEAD(MethodDecorator):
     """ http HEAD method """
-    method = 'HEAD'
+    method = b'HEAD'
 
 
 class POST(MethodDecorator):
     """ http POST method """
-    method = 'POST'
+    method = b'POST'
 
 
 class PUT(MethodDecorator):
     """ http PUT method """
-    method = 'PUT'
+    method = b'PUT'
 
 
 class Resource(object):
@@ -204,15 +208,16 @@ class Resource(object):
         dispatchers = self.request_dispatchers.get(request.method)
         # No dispatchers for method, send 405 with list of allowed methods.
         if dispatchers is None:
-            return http.method_not_allowed(', '.join(self.request_dispatchers))
+            return http.method_not_allowed(
+                b', '.join(self.request_dispatchers))
         # Look up the best dispatcher
         dispatcher = _best_dispatcher(dispatchers, request)
         if dispatcher is not None:
             (callable, match) = dispatcher
             return _dispatch(request, match, lambda r: callable(self, r))
         # No match, send 406
-        return http.not_acceptable([('Content-Type', 'text/plain')], \
-                                   '406 Not Acceptable')
+        return http.not_acceptable([(b'Content-Type', b'text/plain')], \
+                                   b'406 Not Acceptable')
 
     @HEAD()
     def head(self, request):
@@ -233,7 +238,7 @@ class Resource(object):
         while not isinstance(response, http.Response):
             response = response(request)
         content_length = response.headers.get('content-length')
-        response.body = ''
+        response.body = b''
         if content_length is not None:
             response.headers['content-length'] = content_length
         return response

@@ -17,6 +17,10 @@ authenticated user as the REMOTE_USER:
             raise guard.GuardError("No authenticated user.")
 """
 
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
+
 import functools
 
 from restish import http
@@ -66,7 +70,7 @@ def guard(*checkers, **kwargs):
     return decorator
 
 
-class GuardResource(object):
+class GuardResource:
     """
     Resource wrapper that guards access to a resource by calling each checker
     before calling the wrapped resource's methods.
@@ -118,8 +122,8 @@ def _default_error_handler(request, obj, errors):
     """
     Standard error handler produced unauthorized http response
     """
-    errors_text = '\n'.join(errors)
+    errors_text = b'\n'.join(errors)
     raise http.UnauthorizedError(
-            [('Content-Type', 'text/plain')],
-            """401 Unauthorized\n\n%s\n""" % errors_text)
+            [(b'Content-Type', b'text/plain')],
+            b"""401 Unauthorized\n\n%s\n""" % errors_text)
 

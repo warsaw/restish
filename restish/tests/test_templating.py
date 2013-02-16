@@ -1,3 +1,6 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import unittest
 
 from restish import http, resource, templating
@@ -110,30 +113,45 @@ class TestRendering(unittest.TestCase):
 
     def test_render(self):
         def renderer(template, args, encoding=None):
-            return "%s %r" % (template, sorted(args))
+            printable_args = ', '.join("'%s'" % arg for arg in sorted(args))
+            text = "%s [%s]" % (template, printable_args)
+            # XXX We need to return bytes but encoding will be None.  Is it
+            # appropriate to default to utf-8?
+            return text.encode('utf-8' if encoding is None else encoding)
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
-        assert templating.render(request, 'render') == "render ['urls']"
+        self.assertEqual(templating.render(request, 'render'),
+                         "render ['urls']")
 
     def test_render_element(self):
         def renderer(template, args, encoding=None):
-            return "%s %r" % (template, sorted(args))
+            printable_args = ', '.join("'%s'" % arg for arg in sorted(args))
+            text = "%s [%s]" % (template, printable_args)
+            # XXX We need to return bytes but encoding will be None.  Is it
+            # appropriate to default to utf-8?
+            return text.encode('utf-8' if encoding is None else encoding)
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
-        assert templating.render_element(request, None, 'element') == "element ['element', 'urls']"
+        self.assertEqual(templating.render_element(request, None, 'element'),
+                         "element ['element', 'urls']")
 
     def test_render_page(self):
         def renderer(template, args, encoding=None):
-            return "%s %r" % (template, sorted(args))
+            printable_args = ', '.join("'%s'" % arg for arg in sorted(args))
+            text = "%s [%s]" % (template, printable_args)
+            return text.encode(encoding)
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
-        assert templating.render_page(request, None, 'page') == "page ['element', 'urls']"
+        self.assertEqual(templating.render_page(request, None, 'page'),
+                         "page ['element', 'urls']")
 
     def test_render_response(self):
         def renderer(template, args, encoding=None):
-            return "%s %r" % (template, sorted(args))
+            printable_args = ', '.join("'%s'" % arg for arg in sorted(args))
+            text = "%s [%s]" % (template, printable_args)
+            return text.encode(encoding)
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
         response = templating.render_response(request, None, 'page')
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/html; charset=utf-8'
-        assert response.body == "page ['element', 'urls']"
+        self.assertEqual(response.body, "page ['element', 'urls']")
 
     def test_encoding(self):
         """
@@ -159,7 +177,8 @@ class TestPage(unittest.TestCase):
         def renderer(template, args, encoding=None):
             args.pop('urls')
             args.pop('element')
-            return '<p>%s %r</p>' % (template, args)
+            text = '<p>%s %r</p>' % (template, args)
+            return text.encode(encoding)
         class Resource(resource.Resource):
             def __init__(self, args):
                 self.args = args
@@ -172,9 +191,9 @@ class TestPage(unittest.TestCase):
         response = Resource({})(request)
         assert response.status.startswith('200')
         assert response.body == '<p>test.html {}</p>'
-        response = Resource({'foo': 'bar'})(request)
+        response = Resource({b'foo': b'bar'})(request)
         assert response.status.startswith('200')
-        assert response.body == '<p>test.html {\'foo\': \'bar\'}</p>'
+        self.assertEqual(response.body, '<p>test.html {\'foo\': \'bar\'}</p>')
 
     def test_page_decorator_with_custom_headers(self):
         def renderer(template, args, encoding=None):
@@ -188,7 +207,7 @@ class TestPage(unittest.TestCase):
                 # http://sites.google.com/a/snaplog.com/wiki/short_url
                 return [('Link', '<http://sho.rt/1>; rel=shorturl'),
                         ('X-Foo', 'Bar')], \
-                       {'body': 'Hello World!'}
+                       {'body': b'Hello World!'}
 
         environ = {'restish.templating': templating.Templating(renderer)}
         request = http.Request.blank('/', environ=environ)

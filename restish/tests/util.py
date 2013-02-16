@@ -1,3 +1,7 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
+
 def wsgi_out(app, environ):
     import warnings
     warnings.warn("[0.10] Please use WebTest or paste.wsgilib.intercept_output instead.",

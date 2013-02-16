@@ -1,10 +1,14 @@
 """
 Core wsgi application
 """
+
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 from restish import error, http, url
 
 
-class RestishApp(object):
+class RestishApp:
 
     def __init__(self, root_resource):
         self.root = root_resource

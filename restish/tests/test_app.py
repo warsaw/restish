@@ -1,3 +1,6 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import unittest
 import webtest
 
@@ -23,7 +26,7 @@ class Resource(resource.Resource):
 class TestApp(unittest.TestCase):
 
     def test_root(self):
-        A = app.RestishApp(Resource('root'))
+        A = app.RestishApp(Resource(b'root'))
         R = webtest.TestApp(A).get('/', status=200)
         assert R.body == 'root'
 
@@ -39,7 +42,7 @@ class TestApp(unittest.TestCase):
         R = webtest.TestApp(A).get('/not_found', status=404)
 
     def test_children(self):
-        A = app.RestishApp(Resource('root', {'foo': Resource('foo'), 'bar': Resource('bar')}))
+        A = app.RestishApp(Resource(b'root', {'foo': Resource(b'foo'), 'bar': Resource(b'bar')}))
         R = webtest.TestApp(A).get('/', status=200)
         assert R.body == 'root'
         R = webtest.TestApp(A).get('/foo', status=200)
@@ -50,7 +53,7 @@ class TestApp(unittest.TestCase):
     def test_resource_returns_resource_when_called(self):
         class WrapperResource(resource.Resource):
             def __call__(self, request):
-                return Resource('root')
+                return Resource(b'root')
         A = app.RestishApp(WrapperResource())
         R = webtest.TestApp(A).get('/', status=200)
         assert R.body == 'root'
@@ -89,7 +92,7 @@ class TestApp(unittest.TestCase):
         """
         class WrappedResource(resource.Resource):
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/html')], "WrappedResource")
+                return http.ok([('Content-Type', 'text/html')], b"WrappedResource")
         class WrapperResource(resource.Resource):
             @resource.GET(accept='html')
             def html(self, request):
@@ -100,7 +103,7 @@ class TestApp(unittest.TestCase):
 
     def test_resource_returns_func(self):
         def func(request):
-            return http.ok([('Content-Type', 'text/plain')], 'func')
+            return http.ok([('Content-Type', 'text/plain')], b'func')
         class WrapperResource(resource.Resource):
             @resource.GET()
             def GET(self, request):
@@ -133,8 +136,8 @@ class TestApp(unittest.TestCase):
                 return http.ok([('Content-Type', 'text/plain')], self.segment.encode('utf-8'))
         A = app.RestishApp(Resource(''))
         assert webtest.TestApp(A).get('/').body == ''
-        assert webtest.TestApp(A).get('/', extra_environ={'SCRIPT_NAME': '/base'}).body == ''
-        assert webtest.TestApp(A).get('/foo', extra_environ={'SCRIPT_NAME': '/base'}).body == 'foo'
+        assert webtest.TestApp(A).get('/', extra_environ={'SCRIPT_NAME': b'/base'}).body == ''
+        assert webtest.TestApp(A).get('/foo', extra_environ={'SCRIPT_NAME': b'/base'}).body == 'foo'
 
     def test_weird_path_segments(self):
         class Resource(resource.Resource):
@@ -152,10 +155,10 @@ class TestApp(unittest.TestCase):
     def test_iterable_response_body(self):
         def resource(request):
             def gen():
-                yield "Three ... "
-                yield "two ... "
-                yield "one ... "
-                yield "BANG!"
+                yield b"Three ... "
+                yield b"two ... "
+                yield b"one ... "
+                yield b"BANG!"
             return http.ok([('Content-Type', 'text/plain')], gen())
         A = app.RestishApp(resource)
         assert webtest.TestApp(A).get('/').body == 'Three ... two ... one ... BANG!'
@@ -163,7 +166,7 @@ class TestApp(unittest.TestCase):
 
 class CallableResource(object):
     def __call__(self, request):
-        return http.ok([('Content-Type', 'text/plain')], 'CallableResource')
+        return http.ok([('Content-Type', 'text/plain')], b'CallableResource')
 
 
 class TraversableResource(object):
@@ -172,7 +175,7 @@ class TraversableResource(object):
 
 
 def resource_func(request):
-    return http.ok([('Content-Type', 'text/plain')], 'resource_func')
+    return http.ok([('Content-Type', 'text/plain')], b'resource_func')
 
 
 class TestResourceLike(unittest.TestCase):

@@ -1,12 +1,15 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import urlparse
 import urllib
 
 
 # Lists of characters considered "safe", i.e. should not be escape encoded.
-SAFE = '-_.!*\'()~'
+SAFE = b'-_.!*\'()~'
 SAFE_SEGMENT = SAFE
 SAFE_QUERY_NAME = SAFE
-SAFE_QUERY_VALUE = SAFE + '='
+SAFE_QUERY_VALUE = SAFE + b'='
 
 
 # Marker object for unset attributes when None is a meaningful value.
@@ -39,8 +42,8 @@ def split_path(path):
     """
     Split a path of type str into a sequence of unicode segments.
     """
-    segments = [urllib.unquote(segment) for segment in path.split('/')]
-    if segments[:1] == ['']:
+    segments = [urllib.unquote(segment) for segment in path.split(b'/')]
+    if segments[:1] == [b'']:
         segments = segments[1:]
     return [_decode(S) for S in segments]
 
@@ -50,8 +53,8 @@ def join_path(path_segments):
     Combine a sequence of path segments into a single str.
     """
     if not path_segments:
-        return ''
-    return '/' + '/'.join([_quote((_encode(seg)), SAFE_SEGMENT)
+        return b''
+    return b'/' + b'/'.join([_quote((_encode(seg)), SAFE_SEGMENT)
         for seg in path_segments])
 
 
@@ -59,9 +62,10 @@ def _split_query(query):
     """
     Break the query into tuples of it's unquotes elements
     """
-    for x in query.split('&'):
-        if '=' in x:
-            yield tuple(_decode(_unquote(s)) for s in x.split('=', 1))
+    parts = query.split(b'&')
+    for x in parts:
+        if b'=' in x:
+            yield tuple(_decode(_unquote(s)) for s in x.split(b'=', 1))
         elif x:
             yield (_decode(_unquote(x)), None)
 

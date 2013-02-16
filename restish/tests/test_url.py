@@ -1,5 +1,8 @@
 # -*- coding: utf-8
 
+
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
 # Copyright (c) 2004-2007 Divmod.
 # See LICENSE for details.
 
@@ -7,7 +10,7 @@ import unittest
 
 from restish import http, url
 
-POUND = '£'.decode('utf-8')
+POUND = b'£'.decode('utf-8')
 
 theurl = "http://www.foo.com:80/a/nice/path/?zot=23&zut"
 
@@ -68,7 +71,7 @@ class TestUtils(unittest.TestCase):
         self.assertEquals(url.split_path('/foo'), ['foo'])
         self.assertEquals(url.split_path('/foo/bar'), ['foo', 'bar'])
         self.assertEquals(url.split_path('/%2F'), ['/'])
-        self.assertEquals(url.split_path('/%C2%A3'), [POUND])
+        self.assertEquals(url.split_path(b'/%C2%A3'), [POUND])
 
     def test_join_path(self):
         self.assertEquals(url.join_path([]), '')
@@ -87,7 +90,7 @@ class TestUtils(unittest.TestCase):
         self.assertEquals(url.split_query('=1'), [('', '1')])
         self.assertEquals(url.split_query('a=1=2'), [('a', '1=2')])
         self.assertEquals(url.split_query('a=%3F'), [('a', '?')])
-        self.assertEquals(url.split_query('%C2%A3=%C2%A3'), [(POUND, POUND)])
+        self.assertEquals(url.split_query(b'%C2%A3=%C2%A3'), [(POUND, POUND)])
 
     def test_join_query(self):
         self.assertEquals(url.join_query([]), '')
@@ -106,7 +109,7 @@ class TestURL(unittest.TestCase):
         u = url.URL("http://localhost:1234/a/b/c?d&e=f#g")
         self.assertEquals(u.scheme, 'http')
         self.assertEquals(u.netloc, 'localhost:1234')
-        self.assertEquals(u.path, '/a/b/c')
+        self.assertEquals(u.path, b'/a/b/c')
         self.assertEquals(u.path_segments, ['a', 'b', 'c'])
         self.assertEquals(u.query, 'd&e=f')
         self.assertEquals(u.query_list, [('d', None), ('e', 'f')])
@@ -151,7 +154,8 @@ class TestURL(unittest.TestCase):
         urlpath = url.URL(theurl)
         self.assertEquals("http://www.foo.com:80/a/nice/path",
                           urlpath.parent())
-        self.assertEquals(url.URL('http://localhost/').parent(), 'http://localhost')
+        self.assertEquals(url.URL('http://localhost/').parent(),
+                          b'http://localhost')
         self.assertRaises(IndexError, url.URL('http://localhost').parent)
 
     def test_path(self):
@@ -160,21 +164,23 @@ class TestURL(unittest.TestCase):
         only.  Certain bytes should not be quoted.
         """
         urlpath = url.URL("http://example.com/foo/bar?baz=quux#foobar")
-        self.assertEqual(urlpath.path, "/foo/bar")
+        self.assertEqual(urlpath.path, b"/foo/bar")
         urlpath = url.URL("http://example.com/foo%2Fbar?baz=quux#foobar")
-        self.assertEqual(urlpath.path, "/foo%2Fbar")
+        self.assertEqual(urlpath.path, b"/foo%2Fbar")
         urlpath = url.URL("http://example.com/-_.!*'()?baz=quux#foo")
-        self.assertEqual(urlpath.path, "/-_.!*'()")
+        self.assertEqual(urlpath.path, b"/-_.!*'()")
 
     def test_path_url(self):
         """
         Test that URL.path is, itself, a URL.
         """
         self.assertTrue(isinstance(url.URL('http://localhost/a/b').path, url.URL))
-        self.assertEquals(url.URL('http://localhost/a/b').path.child('c'), '/a/b/c')
+        self.assertEquals(url.URL('http://localhost/a/b').path.child('c'),
+                          b'/a/b/c')
 
     def test_root(self):
-        self.assertEqual(url.URL("http://example.com/foo/barr").root(), "http://example.com/")
+        self.assertEqual(url.URL("http://example.com/foo/barr").root(),
+                         b"http://example.com/")
 
     def test_child(self):
         urlpath = url.URL(theurl)
@@ -190,10 +196,14 @@ class TestURL(unittest.TestCase):
             urlpath.child('gong/double/'))
 
     def test_childs(self):
-        self.assertEquals(url.URL('http://localhost/foo').child('bar'), 'http://localhost/foo/bar')
-        self.assertEquals(url.URL('http://localhost/foo').child('bar', 'woo'), 'http://localhost/foo/bar/woo')
-        self.assertEquals(url.URL('http://localhost/').child('foo', 'bar'), 'http://localhost/foo/bar')
-        self.assertEquals(url.URL('http://localhost').child('foo', 'bar'), 'http://localhost/foo/bar')
+        self.assertEquals(url.URL('http://localhost/foo').child('bar'),
+                          b'http://localhost/foo/bar')
+        self.assertEquals(url.URL('http://localhost/foo').child('bar', 'woo'),
+                          b'http://localhost/foo/bar/woo')
+        self.assertEquals(url.URL('http://localhost/').child('foo', 'bar'),
+                          b'http://localhost/foo/bar')
+        self.assertEquals(url.URL('http://localhost').child('foo', 'bar'),
+                          b'http://localhost/foo/bar')
 
     def test_child_init_tuple(self):
         self.assertEquals(
@@ -239,15 +249,15 @@ class TestURL(unittest.TestCase):
                              u.click('/me/17?spam=158'))
 
         # Clicking on a fragment URL keeps all other parts of the current URL.
-        self.assertEquals(url.URL("http://www.foo.com:80/click?a=b").click('#frag'), "http://www.foo.com:80/click?a=b#frag")
+        self.assertEquals(url.URL("http://www.foo.com:80/click?a=b").click('#frag'), b"http://www.foo.com:80/click?a=b#frag")
 
         # Clicking on a fragment URL discards the current fragment.
-        self.assertEquals(url.URL("http://www.foo.com:80/click#foo").click('#bar'), "http://www.foo.com:80/click#bar")
+        self.assertEquals(url.URL("http://www.foo.com:80/click#foo").click('#bar'), b"http://www.foo.com:80/click#bar")
 
         # Check that everything from the path onward is removed when the click link
         # has no path.
         u = url.URL('http://localhost/foo?abc=def')
-        self.failUnlessEqual(u.click('http://www.python.org'), 'http://www.python.org')
+        self.failUnlessEqual(u.click('http://www.python.org'), b'http://www.python.org')
 
     def test_cloneUnchanged(self):
         """
@@ -262,19 +272,21 @@ class TestURL(unittest.TestCase):
 
     def test_clickCollapse(self):
         tests = [
-            ['http://localhost/', '.', 'http://localhost/'],
-            ['http://localhost/', '..', 'http://localhost/'],
-            ['http://localhost/a/b/c', '.', 'http://localhost/a/b/'],
-            ['http://localhost/a/b/c', '..', 'http://localhost/a/'],
-            ['http://localhost/a/b/c', './d/e', 'http://localhost/a/b/d/e'],
-            ['http://localhost/a/b/c', '../d/e', 'http://localhost/a/d/e'],
-            ['http://localhost/a/b/c', '/./d/e', 'http://localhost/d/e'],
-            ['http://localhost/a/b/c', '/../d/e', 'http://localhost/d/e'],
-            ['http://localhost/a/b/c/', '../../d/e/', 'http://localhost/a/d/e/'],
-            ['http://localhost/a/./c', '../d/e', 'http://localhost/d/e'],
-            ['http://localhost/a/./c/', '../d/e', 'http://localhost/a/d/e'],
-            ['http://localhost/a/b/c/d', './e/../f/../g', 'http://localhost/a/b/c/g'],
-            ['http://localhost/a/b/c', 'd//e', 'http://localhost/a/b/d//e'],
+            ['http://localhost/', '.', b'http://localhost/'],
+            ['http://localhost/', '..', b'http://localhost/'],
+            ['http://localhost/a/b/c', '.', b'http://localhost/a/b/'],
+            ['http://localhost/a/b/c', '..', b'http://localhost/a/'],
+            ['http://localhost/a/b/c', './d/e', b'http://localhost/a/b/d/e'],
+            ['http://localhost/a/b/c', '../d/e', b'http://localhost/a/d/e'],
+            ['http://localhost/a/b/c', '/./d/e', b'http://localhost/d/e'],
+            ['http://localhost/a/b/c', '/../d/e', b'http://localhost/d/e'],
+            ['http://localhost/a/b/c/', '../../d/e/',
+                                                b'http://localhost/a/d/e/'],
+            ['http://localhost/a/./c', '../d/e', b'http://localhost/d/e'],
+            ['http://localhost/a/./c/', '../d/e', b'http://localhost/a/d/e'],
+            ['http://localhost/a/b/c/d', './e/../f/../g',
+                                                b'http://localhost/a/b/c/g'],
+            ['http://localhost/a/b/c', 'd//e', b'http://localhost/a/b/d//e'],
             ]
         for start, click, result in tests:
             self.assertEquals(
@@ -313,11 +325,12 @@ class TestURL(unittest.TestCase):
 
     def test_add_queries(self):
         U = url.URL("http://localhost/")
-        self.assertEquals(U.add_queries([('a', 'b'), ('c', 'd')]), "http://localhost/?a=b&c=d")
+        self.assertEquals(U.add_queries([('a', 'b'), ('c', 'd')]),
+                          b"http://localhost/?a=b&c=d")
 
     def test_remove_query(self):
         U = url.URL("http://localhost/foo?a=b&c=d")
-        self.assertEquals(U.remove_query('a'), "http://localhost/foo?c=d")
+        self.assertEquals(U.remove_query('a'), b"http://localhost/foo?c=d")
 
     def test_replace_query(self):
         urlpath = url.URL(theurl)
@@ -367,16 +380,27 @@ class TestURL(unittest.TestCase):
             urlpath.clear_queries())
 
     def test_secure(self):
-        self.assertEquals(url.URL('http://localhost/').secure(), 'https://localhost/')
-        self.assertEquals(url.URL('http://localhost/').secure(True), 'https://localhost/')
-        self.assertEquals(url.URL('https://localhost/').secure(), 'https://localhost/')
-        self.assertEquals(url.URL('https://localhost/').secure(False), 'http://localhost/')
-        self.assertEquals(url.URL('http://localhost/').secure(False), 'http://localhost/')
-        self.assertEquals(url.URL('http://localhost/foo').secure(), 'https://localhost/foo')
-        self.assertEquals(url.URL('http://localhost/foo?bar=1').secure(), 'https://localhost/foo?bar=1')
-        self.assertEquals(url.URL('http://localhost/').secure(port=443), 'https://localhost/')
-        self.assertEquals(url.URL('http://localhost:8080/').secure(port=8443), 'https://localhost:8443/')
-        self.assertEquals(url.URL('https://localhost:8443/').secure(False, 8080), 'http://localhost:8080/')
+        self.assertEquals(url.URL('http://localhost/').secure(),
+                          b'https://localhost/')
+        self.assertEquals(url.URL('http://localhost/').secure(True),
+                          b'https://localhost/')
+        self.assertEquals(url.URL('https://localhost/').secure(),
+                          b'https://localhost/')
+        self.assertEquals(url.URL('https://localhost/').secure(False),
+                          b'http://localhost/')
+        self.assertEquals(url.URL('http://localhost/').secure(False),
+                          b'http://localhost/')
+        self.assertEquals(url.URL('http://localhost/foo').secure(),
+                          b'https://localhost/foo')
+        self.assertEquals(url.URL('http://localhost/foo?bar=1').secure(),
+                          b'https://localhost/foo?bar=1')
+        self.assertEquals(url.URL('http://localhost/').secure(port=443),
+                          b'https://localhost/')
+        self.assertEquals(url.URL('http://localhost:8080/').secure(port=8443),
+                          b'https://localhost:8443/')
+        self.assertEquals(
+            url.URL('https://localhost:8443/').secure(False, 8080),
+            b'http://localhost:8080/')
 
     def test_eq_same(self):
         u = url.URL('http://localhost/')
@@ -417,44 +441,45 @@ class TestURL(unittest.TestCase):
         self.failUnless(u != object(), "URL must be differ from an object.")
 
     def test_parseEqualInParamValue(self):
-        S = 'http://localhost/?=x=x=x'
+        S = b'http://localhost/?=x=x=x'
         u = url.URL(S)
-        self.failUnless(u.query == '=x=x=x')
-        self.failUnless(u.query_list == [('', 'x=x=x')])
-        self.failUnless(u == S)
-        self.failUnless(u.clone() == S)
-        S = 'http://localhost/?foo=x=x=x&bar=y'
+        self.assertEqual(u.query, '=x=x=x')
+        self.assertEqual(u.query_list, [('', 'x=x=x')])
+        self.assertEqual(u, S)
+        self.assertEqual(u.clone(), S)
+        S = b'http://localhost/?foo=x=x=x&bar=y'
         u = url.URL(S)
-        self.failUnless(u.query == 'foo=x=x=x&bar=y')
-        self.failUnless(u.query_list == [('foo', 'x=x=x'), ('bar', 'y')])
-        self.failUnless(u == S)
-        self.failUnless(u.clone() == S)
+        self.assertEqual(u.query, 'foo=x=x=x&bar=y')
+        self.assertEqual(u.query_list, [('foo', 'x=x=x'), ('bar', 'y')])
+        self.assertEqual(u, S)
+        self.assertEqual(u.clone(), S)
 
     def test_path_qs(self):
         path_qs = url.URL('http://localhost:1234/foo?a=b#c').path_qs
         assert isinstance(path_qs, url.URL)
-        assert path_qs == '/foo?a=b#c'
+        self.assertEqual(path_qs, b'/foo?a=b#c')
 
     def test_q(self):
         """Check q is an alias for replace_query"""
         u = url.URL("http://localhost:1234/path?p=foo")
-        assert u.q("p", "bar") == "http://localhost:1234/path?p=bar"
+        self.assertEqual(u.q("p", "bar"), b"http://localhost:1234/path?p=bar")
 
     def test_rmq(self):
         """Check rmq is an alias for remove_query"""
         u = url.URL("http://localhost:1234/path?p1=foo&p2=bar")
-        assert u.rmq("p1") == "http://localhost:1234/path?p2=bar"
+        self.assertEqual(u.rmq("p1"), b"http://localhost:1234/path?p2=bar")
 
 
 class Serialization(unittest.TestCase):
 
     def test_strangeSegs(self):
-        base = 'http://localhost/'
+        base = b'http://localhost/'
         tests = (
-            (r'/foo/', '%2Ffoo%2F'),
-            (r'c:\foo\bar bar', 'c%3A%5Cfoo%5Cbar%20bar'),
-            (r'&<>', '%26%3C%3E'),
-            (u'!"\N{POUND SIGN}$%^&*()_+'.encode('utf-8'), '!%22%C2%A3%24%25%5E%26*()_%2B'),
+            (r'/foo/', b'%2Ffoo%2F'),
+            (r'c:\foo\bar bar', b'c%3A%5Cfoo%5Cbar%20bar'),
+            (r'&<>', b'%26%3C%3E'),
+            (u'!"\N{POUND SIGN}$%^&*()_+'.encode('utf-8'),
+             b'!%22%C2%A3%24%25%5E%26*()_%2B'),
             )
         for test, result in tests:
             u = url.URL(base).child(test)
@@ -490,7 +515,7 @@ class TestURLAccessor(unittest.TestCase):
         self.assertTrue(isinstance(self.url_accessor.application_url, url.URL))
 
     def test_application_path(self):
-        self.assertEquals(self.url_accessor.application_path, '/app')
+        self.assertEquals(self.url_accessor.application_path, b'/app')
         self.assertTrue(isinstance(self.url_accessor.application_path, url.URL))
 
     def test_path_url(self):
@@ -512,7 +537,7 @@ class TestURLAccessor(unittest.TestCase):
 
     def test_new(self):
         u = self.url_accessor.new('http://localhost:1234/a/b/c')
-        assert u == 'http://localhost:1234/a/b/c'
+        self.assertEqual(u, b'http://localhost:1234/a/b/c')
         self.assertTrue(isinstance(u, url.URL))
 
 if __name__ == '__main__':

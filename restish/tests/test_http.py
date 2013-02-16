@@ -1,3 +1,6 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
 import cgi
 import unittest
 import webtest
@@ -5,7 +8,7 @@ import webtest
 from restish import app, http, url
 
 
-def make_environ(path='/bar', base_url='http://localhost:1234/foo', **k):
+def make_environ(path=b'/bar', base_url=b'http://localhost:1234/foo', **k):
     return http.Request.blank(path, **k).environ
 
 
@@ -37,11 +40,11 @@ class TestRequestAttributes(unittest.TestCase):
 
     def test_application_path(self):
         r = http.Request.blank('/')
-        self.assertEquals(r.application_path, '')
+        self.assertEquals(r.application_path, b'')
         r = http.Request.blank('/', base_url='/foo')
-        self.assertEquals(r.application_path, '/foo')
+        self.assertEquals(r.application_path, b'/foo')
         r = http.Request.blank('/', base_url='/foo/')
-        self.assertEquals(r.application_path, '/foo/')
+        self.assertEquals(r.application_path, b'/foo/')
 
 
 class TestResponseCreation(unittest.TestCase):
@@ -69,13 +72,13 @@ class TestResponseCreation(unittest.TestCase):
 class TestSuccessResponseFactories(unittest.TestCase):
 
     def test_ok(self):
-        r = http.ok([('Content-Type', 'text/plain')], 'Yay!')
+        r = http.ok([('Content-Type', 'text/plain')], b'Yay!')
         assert r.status.startswith('200')
         assert r.headers['Content-Type'] == 'text/plain'
         assert r.body == 'Yay!'
 
     def test_created(self):
-        location = 'http://localhost/abc'
+        location = b'http://localhost/abc'
         r = http.created(location, [('Content-Type', 'text/plain')], location)
         assert r.status.startswith('201')
         assert r.headers['Content-Type'] == 'text/plain'
@@ -86,7 +89,7 @@ class TestSuccessResponseFactories(unittest.TestCase):
 class TestRedirectionResponseFactories(unittest.TestCase):
 
     def test_moved_permanently(self):
-        location = 'http://localhost/abc?a=1&b=2'
+        location = b'http://localhost/abc?a=1&b=2'
         r = http.moved_permanently(location)
         # Pass through WebTest for lint-like checks
         webtest.TestApp(app.RestishApp(r)).get('/')
@@ -98,7 +101,8 @@ class TestRedirectionResponseFactories(unittest.TestCase):
         assert cgi.escape(location) in r.body
 
     def test_moved_permanently_headers(self):
-        r = http.moved_permanently('/', headers=[('Set-Cookie', 'name=value')])
+        r = http.moved_permanently(b'/',
+                                   headers=[(b'Set-Cookie', b'name=value')])
         # Pass through WebTest for lint-like checks
         webtest.TestApp(app.RestishApp(r)).get('/')
         # Test response details.
@@ -106,7 +110,7 @@ class TestRedirectionResponseFactories(unittest.TestCase):
         assert r.headers['Set-Cookie'] == 'name=value'
 
     def test_found(self):
-        location = 'http://localhost/abc?a=1&b=2'
+        location = b'http://localhost/abc?a=1&b=2'
         r = http.found(location)
         # Pass through WebTest for lint-like checks
         webtest.TestApp(app.RestishApp(r)).get('/')
@@ -118,7 +122,7 @@ class TestRedirectionResponseFactories(unittest.TestCase):
         assert cgi.escape(location) in r.body
 
     def test_found_headers(self):
-        r = http.found('/', [('Set-Cookie', 'name=value')])
+        r = http.found(b'/', [(b'Set-Cookie', b'name=value')])
         # Pass through WebTest for lint-like checks
         webtest.TestApp(app.RestishApp(r)).get('/')
         # Test response details.
@@ -126,7 +130,7 @@ class TestRedirectionResponseFactories(unittest.TestCase):
         assert r.headers['Set-Cookie'] == 'name=value'
 
     def test_see_other(self):
-        location = 'http://localhost/abc?a=1&b=2'
+        location = b'http://localhost/abc?a=1&b=2'
         r = http.see_other(location)
         # Pass through WebTest for lint-like checks
         webtest.TestApp(app.RestishApp(r)).get('/')
@@ -138,7 +142,7 @@ class TestRedirectionResponseFactories(unittest.TestCase):
         assert cgi.escape(location) in r.body
 
     def test_see_other_headers(self):
-        r = http.see_other('/', [('Set-Cookie', 'name=value')])
+        r = http.see_other(b'/', [(b'Set-Cookie', b'name=value')])
         # Pass through WebTest for lint-like checks
         webtest.TestApp(app.RestishApp(r)).get('/')
         # Test response details.
@@ -161,19 +165,21 @@ class TestClientErrorResponseFactories(unittest.TestCase):
         assert r.status.startswith('400')
         assert r.headers['Content-Type'] == 'text/plain'
         assert '400 Bad Request' in r.body
-        r = http.bad_request([('Content-Type', 'text/html')], '<p>400 Bad Request</p>')
+        r = http.bad_request([('Content-Type', 'text/html')],
+                             b'<p>400 Bad Request</p>')
         assert r.status.startswith('400')
         assert r.headers['Content-Type'] == 'text/html'
-        assert r.body == '<p>400 Bad Request</p>'
+        assert r.body == b'<p>400 Bad Request</p>'
         exc = http.BadRequestError()
         r = exc.make_response()
         assert r.status.startswith('400')
 
     def test_unauthorized(self):
-        r = http.unauthorized([('Content-Type', 'text/html')], '<p>Unauthorized</p>')
+        r = http.unauthorized([('Content-Type', 'text/html')],
+                              b'<p>Unauthorized</p>')
         assert r.status.startswith('401')
         assert r.headers['Content-Type'] == 'text/html'
-        assert r.body == '<p>Unauthorized</p>'
+        assert r.body == b'<p>Unauthorized</p>'
         exc = http.UnauthorizedError([('Content-Type', 'text/html')], '<p>Unauthorized</p>')
         r = exc.make_response()
         assert r.status.startswith('401')
@@ -183,10 +189,11 @@ class TestClientErrorResponseFactories(unittest.TestCase):
         assert r.status.startswith('403')
         assert r.headers['Content-Type'] == 'text/plain'
         assert '403 Forbidden' in r.body
-        r = http.forbidden([('Content-Type', 'text/html')], '<p>403 Forbidden</p>')
+        r = http.forbidden([('Content-Type', 'text/html')],
+                           b'<p>403 Forbidden</p>')
         assert r.status.startswith('403')
         assert r.headers['Content-Type'] == 'text/html'
-        assert r.body == '<p>403 Forbidden</p>'
+        assert r.body == b'<p>403 Forbidden</p>'
         exc = http.ForbiddenError()
         r = exc.make_response()
         assert r.status.startswith('403')
@@ -196,10 +203,11 @@ class TestClientErrorResponseFactories(unittest.TestCase):
         assert r.status.startswith('404')
         assert r.headers['Content-Type'] == 'text/plain'
         assert '404 Not Found' in r.body
-        r = http.not_found([('Content-Type', 'text/html')], '<p>404 Not Found</p>')
+        r = http.not_found([('Content-Type', 'text/html')],
+                           b'<p>404 Not Found</p>')
         assert r.status.startswith('404')
         assert r.headers['Content-Type'] == 'text/html'
-        assert r.body == '<p>404 Not Found</p>'
+        assert r.body == b'<p>404 Not Found</p>'
         exc = http.NotFoundError()
         r = exc.make_response()
         assert r.status.startswith('404')
@@ -217,20 +225,23 @@ class TestClientErrorResponseFactories(unittest.TestCase):
         assert r.status.startswith('405')
 
     def test_not_acceptable(self):
-        r = http.not_acceptable([('Content-Type', 'text/plain')], '406 Not Acceptable')
+        r = http.not_acceptable([('Content-Type', 'text/plain')],
+                                b'406 Not Acceptable')
         assert r.status.startswith('406')
         assert r.headers['Content-Type'] == 'text/plain'
         assert '406 Not Acceptable' in r.body
-        exc = http.NotAcceptableError([('Content-Type', 'text/plain')], '406 Not Acceptable')
+        exc = http.NotAcceptableError([('Content-Type', 'text/plain')],
+                                      b'406 Not Acceptable')
         r = exc.make_response()
         assert r.status.startswith('406')
 
     def test_conflict(self):
-        r = http.conflict([('Content-Type', 'text/plain')], '409 Conflict')
+        r = http.conflict([('Content-Type', 'text/plain')], b'409 Conflict')
         assert r.status.startswith('409')
         assert r.headers['Content-Type'] == 'text/plain'
         assert '409 Conflict' in r.body
-        exc = http.ConflictError([('Content-Type', 'text/plain')], '409 Conflict')
+        exc = http.ConflictError([('Content-Type', 'text/plain')],
+                                 b'409 Conflict')
         r = exc.make_response()
         assert r.status.startswith('409')
 

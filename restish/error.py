@@ -1,3 +1,7 @@
+from __future__ import absolute_import, print_function, unicode_literals
+__metaclass__ = type
+
+
 class RestishException(Exception):
     """
     Base class for all restish exceptions.
