@@ -86,20 +86,24 @@ class RendererTestMixin(object):
     def test_render(self):
         request = http.Request.blank('/', environ={
             'restish.templating': templating.Templating(self.renderer)})
-        assert templating.render(request, 'static') == self.content('static')
+        assert templating.render(request, b'static') == self.content('static')
 
     def test_render_vars(self):
         request = http.Request.blank('/', environ={
             'restish.templating': templating.Templating(self.renderer)})
-        assert templating.render(request, 'dynamic', {'foo': 'bar'}) == '<p>bar</p>'
+        self.assertEqual(
+            templating.render(request, b'dynamic', {'foo': 'bar'}),
+            '<p>bar</p>')
 
     def test_render_different_encoding(self):
         request = http.Request.blank('/', environ={
             'restish.templating': templating.Templating(self.renderer)})
-        assert templating.render(request, 'static', encoding='iso-8859-1') == self.content('static', 'iso-8859-1')
+        self.assertEqual(
+            templating.render(request, b'static', encoding='iso-8859-1'),
+            self.content('static', 'iso-8859-1'))
 
     def test_element(self):
-        @templating.element('static')
+        @templating.element(b'static')
         def element(element, request):
             return {}
         request = http.Request.blank('/', environ={
@@ -107,7 +111,7 @@ class RendererTestMixin(object):
         assert element(None, request) == self.content('static')
 
     def test_page(self):
-        @templating.page('static')
+        @templating.page(b'static')
         def page(page, request):
             return {}
         request = http.Request.blank('/', environ={
