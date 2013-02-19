@@ -23,9 +23,6 @@ class Request(webob.Request):
     to manipulated easily and safely.
     """
 
-    def __init__(self, environ):
-        webob.Request.__init__(self, environ)
-
     @property
     def host_url(self):
         """
@@ -93,8 +90,8 @@ class Response(webob.Response):
     default_content_type = None
 
     def __init__(self, status, headers, body):
-        kwargs = {b'status': status,
-                  b'headerlist': headers}
+        kwargs = {'status': status,
+                  'headerlist': headers}
         # XXX webob workaround. I can't see a way to create an empty response
         # *with* a content-length, as is common for a HEAD response. So, a
         # workaround is that if there is no body, i.e. None, then we capture
@@ -322,7 +319,7 @@ def bad_request(headers=None, body=None):
     """
     if headers is None and body is None:
         headers = [(b'Content-Type', b'text/plain')]
-        body = b'400 Bad Request'
+        body = [b'400 Bad Request']
     return Response(b"400 Bad Request", headers, body)
 
 
@@ -393,7 +390,7 @@ def not_found(headers=None, body=None):
     """
     if headers is None and body is None:
         headers = [(b'Content-Type', b'text/plain')]
-        body = b'404 Not Found'
+        body = [b'404 Not Found']
     return Response(b"404 Not Found", headers, body)
 
 
@@ -413,8 +410,9 @@ def method_not_allowed(allow):
     if isinstance(allow, list):
         allow = b', '.join(allow)
     return Response(b"405 Method Not Allowed",
-          [(b'Content-Type', b'text/plain'), \
-           (b'Allow', allow)], b"405 Method Not Allowed")
+                    [(b'Content-Type', b'text/plain'),
+                     (b'Allow', allow)],
+                    [b"405 Method Not Allowed"])
 
 
 class MethodNotAllowedError(error.HTTPClientError):
@@ -495,7 +493,7 @@ def internal_server_error(headers=None, body=None):
     """
     if headers is None and body is None:
         headers = [(b'Content-Type', b'text/plain')]
-        body = b'500 Internal Server Error'
+        body = [b'500 Internal Server Error']
     return Response(b'500 Internal Server Error', headers, body)
 
 
@@ -516,7 +514,7 @@ def bad_gateway(headers=None, body=None):
     """
     if headers is None and body is None:
         headers = [(b'Content-Type', b'text/plain')]
-        body = b'502 Bad Gateway'
+        body = [b'502 Bad Gateway']
     return Response(b'502 Bad Gateway', headers, body)
 
 
@@ -540,7 +538,7 @@ def service_unavailable(headers=None, body=None):
     """
     if headers is None and body is None:
         headers = [(b'Content-Type', b'text/plain')]
-        body = b'503 Service Unavailable'
+        body = [b'503 Service Unavailable']
     return Response(b'503 Service Unavailable', headers, body)
 
 

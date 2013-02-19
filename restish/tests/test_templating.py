@@ -108,7 +108,7 @@ class TestRendering(unittest.TestCase):
         try:
             templating.Templating(None).render(http.Request.blank('/'),
                                                'foo.html')
-        except TypeError, e:
+        except TypeError as e:
             assert 'renderer' in unicode(e)
 
     def test_render(self):
@@ -120,7 +120,7 @@ class TestRendering(unittest.TestCase):
             return text.encode('utf-8' if encoding is None else encoding)
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
         self.assertEqual(templating.render(request, 'render'),
-                         "render ['urls']")
+                         b"render ['urls']")
 
     def test_render_element(self):
         def renderer(template, args, encoding=None):
@@ -131,7 +131,7 @@ class TestRendering(unittest.TestCase):
             return text.encode('utf-8' if encoding is None else encoding)
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
         self.assertEqual(templating.render_element(request, None, 'element'),
-                         "element ['element', 'urls']")
+                         b"element ['element', 'urls']")
 
     def test_render_page(self):
         def renderer(template, args, encoding=None):
@@ -140,7 +140,7 @@ class TestRendering(unittest.TestCase):
             return text.encode(encoding)
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
         self.assertEqual(templating.render_page(request, None, 'page'),
-                         "page ['element', 'urls']")
+                         b"page ['element', 'urls']")
 
     def test_render_response(self):
         def renderer(template, args, encoding=None):

@@ -21,19 +21,19 @@ class TestResourceFunc(unittest.TestCase):
 
     def test_anything(self):
         def func(request):
-            return http.ok([(b'Content-Type', b'text/plain')], b'Hello')
-        response = make_app(func).get(b'/', status=200)
-        assert response.body == 'Hello'
+            return http.ok([(b'Content-Type', b'text/plain')], [b'Hello'])
+        response = make_app(func).get('/', status=200)
+        self.assertEqual(response.body, b'Hello')
         app = make_app(func)
         app.post(b'/', status=200)
         response = make_app(func).post(b'/', status=200)
-        assert response.body == 'Hello'
+        self.assertEqual(response.body, b'Hello')
 
     def test_method_match(self):
         @resource.GET()
         def func(request):
             return http.ok([(b'Content-Type', b'text/plain')], b'Hello')
-        response = make_app(func).get(b'/', status=200)
+        response = make_app(func).get('/', status=200)
         assert response.body == 'Hello'
         response = make_app(func).post(b'/', status=405)
 
@@ -174,10 +174,11 @@ class TestResource(unittest.TestCase):
             @resource.GET()
             def GET(self, request):
                 return http.ok([('Content-Type', 'text/plain')], b'text')
-        head_response = First()(http.Request.blank('/', environ={'REQUEST_METHOD': 'HEAD'}))
-        assert head_response.status == '200 OK'
-        assert head_response.headers['content-length'] == '4'
-        assert head_response.body == ''
+        head_response = First()(http.Request.blank(
+            '/', environ={'REQUEST_METHOD': 'HEAD'}))
+        self.assertEqual(head_response.status, '200 OK')
+        self.assertEqual(head_response.headers[b'content-length'], '4')
+        self.assertEqual(head_response.body, b'')
 
     def test_specialised_head(self):
         class Resource(resource.Resource):
@@ -451,9 +452,9 @@ class TestChildLookup(unittest.TestCase):
 
     def test_root_is_a_response(self):
         A = app.RestishApp(http.ok(
-            [('Content-Type', 'text/plain')], b'foobar'))
+            [('Content-Type', 'text/plain')], [b'foobar']))
         R = webtest.TestApp(A).get('/foo')
-        assert R.body == 'foobar'
+        self.assertEqual(R.body, b'foobar')
 
     def _test_custom_match(self):
         self.fail()
@@ -516,7 +517,7 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def html(self, request):
-                return http.ok([('Content-Type', 'text/html')], b"<html />")
+                return http.ok([('Content-Type', 'text/html')], [b"<html />"])
         response = make_app(Resource()).get('/', status=200)
         assert response.headers['Content-Type'] == 'text/html'
 
@@ -527,7 +528,7 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET()
             def html(self, request):
-                return http.ok([('Content-Type', 'text/html')], b"<html />")
+                return http.ok([('Content-Type', 'text/html')], [b"<html />"])
         response = make_app(Resource()).get('/', headers=[('Accept', b'')], status=200)
         assert response.headers['Content-Type'] == 'text/html'
 

@@ -1,8 +1,13 @@
 from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
-import urlparse
-import urllib
+try:
+    # Python 3
+    from urllib.parse import quote, unquote, unquote_plus, urlsplit, urlunsplit
+except ImportError:
+    # Python 2
+    from urlparse import  urlsplit, urlunsplit
+    from urllib import quote, unquote, unquote_plus
 
 
 # Lists of characters considered "safe", i.e. should not be escape encoded.
@@ -11,13 +16,37 @@ SAFE_SEGMENT = SAFE
 SAFE_QUERY_NAME = SAFE
 SAFE_QUERY_VALUE = SAFE + b'='
 
+try:
+    # Python 2
+    _NATIVEUNICODE = unicode
+except NameError:
+    # Python 3
+    _NATIVEUNICODE = str
+
 
 # Marker object for unset attributes when None is a meaningful value.
 _UNSET = object()
 
 
+# Native string literals.  In Python 2, this returns a bytes/str, and in
+# Python 3 this returns a str.  The input should be a unadorned string literal
+# encoded in utf-8 or a bytes object.
+def _n(S):
+    if isinstance(S, str):
+        return S
+    if isinstance(S, bytes):
+        # type(bytes) != type(str), so we're in Python 3.
+        return S.decode('utf-8')
+    else:
+        # We must have gotten a unicode in Python 2.  Turn this back into a
+        # Python 2 str type.
+        return S.encode('utf-8')
+
+
 def _decode(S):
     """ Simple decode from utf-8 """
+    if isinstance(S, _NATIVEUNICODE):
+        return S
     return S.decode('utf-8')
 
 
@@ -30,20 +59,26 @@ def _encode(S):
 
 def _quote(S, safe):
     """ urllib quote - see top of module for range of safe definitions """
-    return urllib.quote(S, safe)
+    return quote(S, safe)
 
 
 def _unquote(S):
     """ urllib unquote """
-    return urllib.unquote_plus(S)
+    return unquote_plus(S)
 
 
 def split_path(path):
     """
     Split a path of type str into a sequence of unicode segments.
     """
-    segments = [urllib.unquote(segment) for segment in path.split(b'/')]
-    if segments[:1] == [b'']:
+    # In Python 3, unquote() requires that argument is a str object, so coerce
+    # to native string using utf-8.
+    path = _n(path)
+    try:
+        segments = [unquote(segment) for segment in path.split(_n('/'))]
+    except TypeError:
+        import pdb; pdb.set_trace()
+    if segments[:1] == [_n('')]:
         segments = segments[1:]
     return [_decode(S) for S in segments]
 
@@ -93,7 +128,7 @@ def join_query(query_list):
     return '&'.join(one(KV) for KV in query_list)
 
 
-class URL(str):
+class URL(bytes):
     """
     URL class.
 
@@ -114,13 +149,13 @@ class URL(str):
         Create a new URL instance from a str URL.
         """
         str.__init__(url)
-        self.parsed_url = urlparse.urlsplit(url)
+        self.parsed_url = urlsplit(url)
 
     def __eq__(self, other):
         if isinstance(other, URL):
             return self.parsed_url == other.parsed_url
         elif isinstance(other, str):
-            return self.parsed_url == urlparse.urlsplit(other)
+            return self.parsed_url == urlsplit(other)
         return False
 
     def __hash__(self):
@@ -189,8 +224,8 @@ class URL(str):
             query_ = query
         if fragment is not _UNSET:
             fragment_ = fragment
-        return self.__class__(urlparse.urlunsplit((scheme_, netloc_, path_,
-                                                   query_, fragment_)))
+        return self.__class__(urlunsplit((scheme_, netloc_, path_,
+                                          query_, fragment_)))
 
     ## path manipulations ##
 
@@ -234,7 +269,7 @@ class URL(str):
         Create a url as if the current url was given by ``self`` and ``href``
         was clicked on
         """
-        scheme, netloc, path, query, fragment = urlparse.urlsplit(href)
+        scheme, netloc, path, query, fragment = urlsplit(href)
 
         # Return self if the click URL is empty.
         if (scheme, netloc, path, query, fragment) == ('', '', '', '', ''):

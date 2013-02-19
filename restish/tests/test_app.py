@@ -7,10 +7,22 @@ import webtest
 from restish import app, http, resource, url
 
 
+if str is bytes:
+    # Python 2
+    _scalartypes = (bytes, unicode)
+else:
+    # Python 3
+    _scalartypes = (bytes, str)
+
+
 class Resource(resource.Resource):
 
     def __init__(self, name, children={}):
-        self.name = name
+        # webtest does not like returning bytes or strings from the iterator,
+        # however it does different checks in Python 2 and 3.  E.g. in Python
+        # 3, it disallows bytes and str, but in Python 2, it only disallows
+        # str, i.e. bytes, but should also disallow unicodes.
+        self.name = [name] if isinstance(name, _scalartypes) else name
         self.children = children
 
     def resource_child(self, request, segments):
@@ -28,7 +40,7 @@ class TestApp(unittest.TestCase):
     def test_root(self):
         A = app.RestishApp(Resource(b'root'))
         R = webtest.TestApp(A).get('/', status=200)
-        assert R.body == 'root'
+        self.assertEqual(R.body, b'root')
 
     def test_not_found(self):
         A = app.RestishApp(resource.Resource())
@@ -42,13 +54,15 @@ class TestApp(unittest.TestCase):
         R = webtest.TestApp(A).get('/not_found', status=404)
 
     def test_children(self):
-        A = app.RestishApp(Resource(b'root', {'foo': Resource(b'foo'), 'bar': Resource(b'bar')}))
+        A = app.RestishApp(Resource(b'root', {
+            'foo': Resource(b'foo'),
+            'bar': Resource(b'bar')}))
         R = webtest.TestApp(A).get('/', status=200)
-        assert R.body == 'root'
+        self.assertEqual(R.body, b'root')
         R = webtest.TestApp(A).get('/foo', status=200)
-        assert R.body == 'foo'
+        self.assertEqual(R.body, b'foo')
         R = webtest.TestApp(A).get('/bar', status=200)
-        assert R.body == 'bar'
+        self.assertEqual(R.body, b'bar')
 
     def test_resource_returns_resource_when_called(self):
         class WrapperResource(resource.Resource):
@@ -56,7 +70,7 @@ class TestApp(unittest.TestCase):
                 return Resource(b'root')
         A = app.RestishApp(WrapperResource())
         R = webtest.TestApp(A).get('/', status=200)
-        assert R.body == 'root'
+        self.assertEqual(R.body, b'root')
 
     def test_resource_returns_resource(self):
         """
@@ -69,7 +83,7 @@ class TestApp(unittest.TestCase):
                 return self.__class__(segments), []
             def __call__(self, request):
                 return http.ok([('Content-Type', 'text/plain')], repr(self.segments))
-        class WrapperResource(object):
+        class WrapperResource:
             def resource_child(self, request, segments):
                 return WrappedResource()
             def __call__(self, request):
@@ -103,28 +117,28 @@ class TestApp(unittest.TestCase):
 
     def test_resource_returns_func(self):
         def func(request):
-            return http.ok([('Content-Type', 'text/plain')], b'func')
+            return http.ok([('Content-Type', 'text/plain')], [b'func'])
         class WrapperResource(resource.Resource):
             @resource.GET()
             def GET(self, request):
                 return func
         A = app.RestishApp(WrapperResource())
         R = webtest.TestApp(A).get('/', status=200)
-        assert R.body == 'func'
+        self.assertEqual(R.body, b'func')
 
     def test_client_error(self):
         class Resource(resource.Resource):
             def __call__(self, request):
                 raise http.BadRequestError()
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/', status=400)
+        webtest.TestApp(A).get('/', status=400)
 
     def test_server_error(self):
         class Resource(resource.Resource):
             def __call__(self, request):
                 raise http.BadGatewayError()
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/', status=502)
+        webtest.TestApp(A).get('/', status=502)
 
     def test_no_root_application(self):
         class Resource(resource.Resource):
@@ -133,11 +147,12 @@ class TestApp(unittest.TestCase):
             def resource_child(self, request, segments):
                 return self.__class__(segments[0]), segments[1:]
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], self.segment.encode('utf-8'))
+                return http.ok([('Content-Type', 'text/plain')],
+                               [self.segment.encode('utf-8')])
         A = app.RestishApp(Resource(''))
-        assert webtest.TestApp(A).get('/').body == ''
-        assert webtest.TestApp(A).get('/', extra_environ={'SCRIPT_NAME': b'/base'}).body == ''
-        assert webtest.TestApp(A).get('/foo', extra_environ={'SCRIPT_NAME': b'/base'}).body == 'foo'
+        self.assertEqual(webtest.TestApp(A).get('/').body, b'')
+        self.assertEqual(webtest.TestApp(A).get('/', extra_environ={'SCRIPT_NAME': b'/base'}).body, b'')
+        self.assertEqual(webtest.TestApp(A).get('/foo', extra_environ={'SCRIPT_NAME': b'/base'}).body, b'foo')
 
     def test_weird_path_segments(self):
         class Resource(resource.Resource):
@@ -146,11 +161,12 @@ class TestApp(unittest.TestCase):
             def resource_child(self, request, segments):
                 return self.__class__(segments[0]), segments[1:]
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], self.segment.encode('utf-8'))
+                return http.ok([('Content-Type', 'text/plain')],
+                               [self.segment.encode('utf-8')])
         A = app.RestishApp(Resource(''))
-        assert webtest.TestApp(A).get('/').body == ''
-        assert webtest.TestApp(A).get('/foo').body == 'foo'
-        assert webtest.TestApp(A).get(url.URL('/').child('foo+bar@example.com').path).body == 'foo+bar@example.com'
+        self.assertEqual(webtest.TestApp(A).get('/').body, b'')
+        self.assertEqual(webtest.TestApp(A).get('/foo').body, b'foo')
+        self.assertEqual(webtest.TestApp(A).get(url.URL('/').child('foo+bar@example.com').path).body, b'foo+bar@example.com')
 
     def test_iterable_response_body(self):
         def resource(request):
@@ -161,21 +177,22 @@ class TestApp(unittest.TestCase):
                 yield b"BANG!"
             return http.ok([('Content-Type', 'text/plain')], gen())
         A = app.RestishApp(resource)
-        assert webtest.TestApp(A).get('/').body == 'Three ... two ... one ... BANG!'
+        self.assertEqual(webtest.TestApp(A).get('/').body,
+                         b'Three ... two ... one ... BANG!')
 
 
-class CallableResource(object):
+class CallableResource:
     def __call__(self, request):
-        return http.ok([('Content-Type', 'text/plain')], b'CallableResource')
+        return http.ok([('Content-Type', 'text/plain')], [b'CallableResource'])
 
 
-class TraversableResource(object):
+class TraversableResource:
     def resource_child(self, request, segments):
         return CallableResource(), []
 
 
 def resource_func(request):
-    return http.ok([('Content-Type', 'text/plain')], b'resource_func')
+    return http.ok([('Content-Type', 'text/plain')], [b'resource_func'])
 
 
 class TestResourceLike(unittest.TestCase):
@@ -185,7 +202,7 @@ class TestResourceLike(unittest.TestCase):
 
     def test_callable(self):
         A = app.RestishApp(CallableResource())
-        assert webtest.TestApp(A).get('/').body == 'CallableResource'
+        self.assertEqual(webtest.TestApp(A).get('/').body, b'CallableResource')
 
     def test_not_callable(self):
         A = app.RestishApp(TraversableResource())
@@ -193,7 +210,8 @@ class TestResourceLike(unittest.TestCase):
 
     def test_traversable(self):
         A = app.RestishApp(TraversableResource())
-        assert webtest.TestApp(A).get('/foo').body == 'CallableResource'
+        self.assertEqual(webtest.TestApp(A).get('/foo').body,
+                         b'CallableResource')
 
     def test_not_traversable(self):
         A = app.RestishApp(CallableResource())
@@ -201,7 +219,7 @@ class TestResourceLike(unittest.TestCase):
 
     def test_func_callable(self):
         A = app.RestishApp(resource_func)
-        assert webtest.TestApp(A).get('/').body == 'resource_func'
+        self.assertEqual(webtest.TestApp(A).get('/').body, b'resource_func')
 
     def test_func_not_traversable(self):
         A = app.RestishApp(resource_func)

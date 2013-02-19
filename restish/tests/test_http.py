@@ -155,7 +155,7 @@ class TestRedirectionResponseFactories(unittest.TestCase):
         r = http.not_modified([('ETag', '123')])
         assert r.status.startswith('304')
         assert r.headers['Content-Length'] == '0'
-        assert r.body == ''
+        self.assertEqual(r.body, b'')
 
 
 class TestClientErrorResponseFactories(unittest.TestCase):

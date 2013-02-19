@@ -6,6 +6,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
 
+import sys
 import mimetypes
 import re
 import mimeparse
@@ -47,7 +48,8 @@ def _gather_request_dispatchers(cls, clsattrs):
         request_dispatchers.setdefault(method, []).append(
             (wrapper.func, match))
     # Append any handlers that were added by base classes.
-    for method, dispatchers in getattr(cls, 'request_dispatchers', {}).iteritems():
+    dispatchers = getattr(cls, 'request_dispatchers', {})
+    for method, dispatchers in dispatchers.items():
         request_dispatchers.setdefault(method, []).extend(dispatchers)
     # Set the handlers on the class.
     cls.request_dispatchers = request_dispatchers
@@ -73,12 +75,12 @@ def _find_annotated_funcs(clsattrs, annotation):
     """
     Return a (generated) list of methods that include the given annotation.
     """
-    funcs = (func for func in clsattrs.itervalues() \
+    funcs = (func for func in clsattrs.values()
              if getattr(func, annotation, None) is not None)
     return funcs
 
 
-class MethodDecorator(object):
+class MethodDecorator:
     """
     content negotition decorator base class. See DELETE, GET, PUT, POST
     """
@@ -101,7 +103,7 @@ class MethodDecorator(object):
         return wrapper
 
 
-class ResourceMethodWrapper(object):
+class ResourceMethodWrapper:
     """
     Wraps a @resource.GET etc -decorated function to ensure the function is
     only called with a matching request. If the request does not match then an
@@ -137,7 +139,7 @@ def _normalise_mimetype(mimetype):
     """
     Expand any shortcut mimetype names into a full mimetype
     """
-    if '/' in mimetype:
+    if b'/' in mimetype:
         return mimetype
     # Try mimetypes module, by extension.
     real = mimetypes.guess_type('filename.%s' % mimetype)[0]
@@ -176,7 +178,18 @@ class PUT(MethodDecorator):
     method = b'PUT'
 
 
-class Resource(object):
+# This odd syntax is necessary in order to define a base class of a custom
+# metaclass in both Python 2 and Python 3, since the syntax is incompatible
+# between them.
+#
+# The name of the class must be a native string, i.e. bytes/str in Python 2
+# but str/unicode in Python 3.
+
+_ResourceBase = _metaResource(
+    b'_ResourceBase' if sys.version_info[0] == 2 else '_ResourceBase', (), {})
+
+
+class Resource(_ResourceBase):
     """
     Base class for additional resource types.
 
@@ -184,8 +197,6 @@ class Resource(object):
     segments) and __call__(request)), possibly dispatching to annotated methods
     of the class (using metaclass magic).
     """
-
-    __metaclass__ = _metaResource
 
     def resource_child(self, request, segments):
         for matcher, func in self.child_factories:
@@ -205,7 +216,10 @@ class Resource(object):
 
     def __call__(self, request):
         # Get the dispatchers for the request method.
-        dispatchers = self.request_dispatchers.get(request.method)
+        method = request.method
+        if not isinstance(method, bytes):
+            method = method.encode('utf-8')
+        dispatchers = self.request_dispatchers.get(method)
         # No dispatchers for method, send 405 with list of allowed methods.
         if dispatchers is None:
             return http.method_not_allowed(
@@ -216,7 +230,7 @@ class Resource(object):
             (callable, match) = dispatcher
             return _dispatch(request, match, lambda r: callable(self, r))
         # No match, send 406
-        return http.not_acceptable([(b'Content-Type', b'text/plain')], \
+        return http.not_acceptable([(b'Content-Type', b'text/plain')],
                                    b'406 Not Acceptable')
 
     @HEAD()
@@ -324,7 +338,7 @@ def child(matcher=None):
     return decorator
 
 
-class TemplateChildMatcher(object):
+class TemplateChildMatcher:
     """
     A @child matcher that parses a template in the form /fixed/{dynamic}/fixed,
     extracting segments inside {} markers.
@@ -369,7 +383,7 @@ class TemplateChildMatcher(object):
         return [], match.groupdict(), remaining_segments
 
 
-class AnyChildMatcher(object):
+class AnyChildMatcher:
     """
     A @child matcher that will always match, returning to match args and the
     list of segments unchanged.

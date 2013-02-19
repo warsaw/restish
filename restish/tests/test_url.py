@@ -10,7 +10,8 @@ import unittest
 
 from restish import http, url
 
-POUND = b'£'.decode('utf-8')
+U_POUND = '£'
+POUND = U_POUND.encode('utf-8')
 
 theurl = "http://www.foo.com:80/a/nice/path/?zot=23&zut"
 
@@ -71,16 +72,16 @@ class TestUtils(unittest.TestCase):
         self.assertEquals(url.split_path('/foo'), ['foo'])
         self.assertEquals(url.split_path('/foo/bar'), ['foo', 'bar'])
         self.assertEquals(url.split_path('/%2F'), ['/'])
-        self.assertEquals(url.split_path(b'/%C2%A3'), [POUND])
+        self.assertEquals(url.split_path(b'/%C2%A3'), [U_POUND])
 
     def test_join_path(self):
-        self.assertEquals(url.join_path([]), '')
+        self.assertEquals(url.join_path([]), b'')
         self.assertEquals(url.join_path(['']), '/')
         self.assertEquals(url.join_path(['', '']), '//')
         self.assertEquals(url.join_path(['foo']), '/foo')
         self.assertEquals(url.join_path(['foo', 'bar']), '/foo/bar')
         self.assertEquals(url.join_path(['/']), '/%2F')
-        self.assertEquals(url.join_path([POUND]), '/%C2%A3')
+        self.assertEquals(url.join_path([U_POUND]), '/%C2%A3')
 
     def test_split_query(self):
         self.assertEquals(url.split_query(''), [])
@@ -90,7 +91,7 @@ class TestUtils(unittest.TestCase):
         self.assertEquals(url.split_query('=1'), [('', '1')])
         self.assertEquals(url.split_query('a=1=2'), [('a', '1=2')])
         self.assertEquals(url.split_query('a=%3F'), [('a', '?')])
-        self.assertEquals(url.split_query(b'%C2%A3=%C2%A3'), [(POUND, POUND)])
+        self.assertEquals(url.split_query(b'%C2%A3=%C2%A3'), [(U_POUND, U_POUND)])
 
     def test_join_query(self):
         self.assertEquals(url.join_query([]), '')
@@ -100,7 +101,7 @@ class TestUtils(unittest.TestCase):
         self.assertEquals(url.join_query([('', '1')]), '=1')
         self.assertEquals(url.join_query([('a', '==1')]), 'a===1')
         self.assertEquals(url.join_query([('a', '?')]), 'a=%3F')
-        self.assertEquals(url.join_query([(POUND, POUND)]), '%C2%A3=%C2%A3')
+        self.assertEquals(url.join_query([(U_POUND, U_POUND)]), '%C2%A3=%C2%A3')
 
 
 class TestURL(unittest.TestCase):
@@ -174,12 +175,13 @@ class TestURL(unittest.TestCase):
         """
         Test that URL.path is, itself, a URL.
         """
-        self.assertTrue(isinstance(url.URL('http://localhost/a/b').path, url.URL))
+        self.assertTrue(
+            isinstance(url.URL('http://localhost/a/b').path, url.URL))
         self.assertEquals(url.URL('http://localhost/a/b').path.child('c'),
                           b'/a/b/c')
 
     def test_root(self):
-        self.assertEqual(url.URL("http://example.com/foo/barr").root(),
+        self.assertEqual(url.URL(b"http://example.com/foo/barr").root(),
                          b"http://example.com/")
 
     def test_child(self):
@@ -380,7 +382,7 @@ class TestURL(unittest.TestCase):
             urlpath.clear_queries())
 
     def test_secure(self):
-        self.assertEquals(url.URL('http://localhost/').secure(),
+        self.assertEquals(url.URL(b'http://localhost/').secure(),
                           b'https://localhost/')
         self.assertEquals(url.URL('http://localhost/').secure(True),
                           b'https://localhost/')
@@ -443,7 +445,7 @@ class TestURL(unittest.TestCase):
     def test_parseEqualInParamValue(self):
         S = b'http://localhost/?=x=x=x'
         u = url.URL(S)
-        self.assertEqual(u.query, '=x=x=x')
+        self.assertEqual(u.query, b'=x=x=x')
         self.assertEqual(u.query_list, [('', 'x=x=x')])
         self.assertEqual(u, S)
         self.assertEqual(u.clone(), S)
