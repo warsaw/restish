@@ -6,6 +6,23 @@ import unittest
 from restish import http, resource, templating
 
 
+def _ensure_bytes(s):
+    # In Python 2, str() and repr() return bytes object, since `str is bytes`,
+    # but in Python 3, they return str objects (i.e. unicodes).  However, in
+    # both versions, bytes objects must be returned as the body, so this
+    # function is a helper to ensure that.  Assume utf-8.
+    if isinstance(s, bytes):
+        return s
+    return s.encode('utf-8')
+
+try:
+    # Python 2
+    unicode_type = unicode
+except NameError:
+    # Python 3
+    unicode_type = str
+
+
 class TestModule(unittest.TestCase):
 
     def test_exports(self):
@@ -65,7 +82,7 @@ class TestArgs(unittest.TestCase):
     def test_overloading(self):
         class Templating(templating.Templating):
             def render(self, request, template, args=None, encoding=None):
-                return repr(args)
+                return [_ensure_bytes(repr(args))]
             def args(self, request):
                 args = super(Templating, self).args(request)
                 args['extra_arg'] = None
@@ -96,10 +113,13 @@ class TestArgs(unittest.TestCase):
         def element(element, request):
             return {}
         request = http.Request.blank('/', environ={'restish.templating': T})
-        for name in ['extra_arg', 'extra_element_arg', 'extra_page_arg']:
+        for name in [b'extra_arg', b'extra_element_arg', b'extra_page_arg']:
             assert name in page(None, request).body
-        for name in ['extra_arg', 'extra_element_arg']:
-            assert name in element(None, request)
+        elements = element(None, request)
+        self.assertEqual(len(elements), 1)
+        element_0 = elements[0]
+        for name in [b'extra_arg', b'extra_element_arg']:
+            assert name in element_0
 
 
 class TestRendering(unittest.TestCase):
@@ -109,7 +129,7 @@ class TestRendering(unittest.TestCase):
             templating.Templating(None).render(http.Request.blank('/'),
                                                'foo.html')
         except TypeError as e:
-            assert 'renderer' in unicode(e)
+            assert 'renderer' in unicode_type(e)
 
     def test_render(self):
         def renderer(template, args, encoding=None):
@@ -146,7 +166,7 @@ class TestRendering(unittest.TestCase):
         def renderer(template, args, encoding=None):
             printable_args = ', '.join("'%s'" % arg for arg in sorted(args))
             text = "%s [%s]" % (template, printable_args)
-            return text.encode(encoding)
+            return [text.encode(encoding)]
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
         response = templating.render_response(request, None, 'page')
         assert response.status == "200 OK"
@@ -158,7 +178,7 @@ class TestRendering(unittest.TestCase):
         Check that only a rendered page encoded output by default.
         """
         def renderer(template, args, encoding=None):
-            return str(encoding)
+            return _ensure_bytes(str(encoding))
         @templating.element('element')
         def element(element, request):
             return {}
@@ -178,7 +198,7 @@ class TestPage(unittest.TestCase):
             args.pop('urls')
             args.pop('element')
             text = '<p>%s %r</p>' % (template, args)
-            return text.encode(encoding)
+            return [text.encode(encoding)]
         class Resource(resource.Resource):
             def __init__(self, args):
                 self.args = args
@@ -190,7 +210,7 @@ class TestPage(unittest.TestCase):
         request = http.Request.blank('/', environ=environ)
         response = Resource({})(request)
         assert response.status.startswith('200')
-        assert response.body == '<p>test.html {}</p>'
+        self.assertEqual(response.body, b'<p>test.html {}</p>')
         response = Resource({b'foo': b'bar'})(request)
         assert response.status.startswith('200')
         self.assertEqual(response.body, '<p>test.html {\'foo\': \'bar\'}</p>')
@@ -207,13 +227,13 @@ class TestPage(unittest.TestCase):
                 # http://sites.google.com/a/snaplog.com/wiki/short_url
                 return [('Link', '<http://sho.rt/1>; rel=shorturl'),
                         ('X-Foo', 'Bar')], \
-                       {'body': b'Hello World!'}
+                       {'body': [b'Hello World!']}
 
         environ = {'restish.templating': templating.Templating(renderer)}
         request = http.Request.blank('/', environ=environ)
         response = Resource()(request)
         assert response.status.startswith('200')
-        assert response.body == 'Hello World!'
+        assert response.body == b'Hello World!'
         assert response.headers.get('Link') == '<http://sho.rt/1>; rel=shorturl'
         assert response.headers.get('X-Foo') == 'Bar'
 

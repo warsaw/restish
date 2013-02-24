@@ -24,6 +24,7 @@ __metaclass__ = type
 import functools
 
 from restish import http
+from restish.url import _encode
 
 
 class GuardError(Exception):
@@ -122,8 +123,11 @@ def _default_error_handler(request, obj, errors):
     """
     Standard error handler produced unauthorized http response
     """
-    errors_text = b'\n'.join(errors)
+    # Are the element of errors strings or bytes?  The exception must include
+    # a bytes message, so convert each element to a bytes, assuming utf-8
+    # encoding.
+    errors_text = b'\n'.join(_encode(s) for s in errors)
+    error_message = b'401 Unauthorized\n\n' + errors_text + b'\n'
     raise http.UnauthorizedError(
             [(b'Content-Type', b'text/plain')],
-            b"""401 Unauthorized\n\n%s\n""" % errors_text)
-
+            error_message)

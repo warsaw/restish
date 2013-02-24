@@ -9,7 +9,7 @@ from restish import guard, http
 def make_checker(allow, checker_num=1):
     def checker(request, obj):
         if not allow:
-            raise guard.GuardError(b"checker #%d failed" % checker_num)
+            raise guard.GuardError("checker #%d failed" % checker_num)
     return checker
 
 
@@ -45,7 +45,7 @@ class TestGuard(unittest.TestCase):
             Resource().denied(request)
         except http.UnauthorizedError as e:
             response = e.make_response()
-            assert response.headers['Content-Type'] == 'text/plain'
+            assert response.headers[b'Content-Type'] == 'text/plain'
             assert response.body == """401 Unauthorized\n\nchecker #1 failed\n"""
         else:
             self.fail()
@@ -62,7 +62,7 @@ class TestGuard(unittest.TestCase):
             def __call__(self, request):
                 pass
         request = http.Request.blank('/')
-        assert Resource()(request) is UNAUTHORIZED
+        self.assertTrue(Resource()(request) is UNAUTHORIZED)
 
     def test_multiple_failures(self):
         """
@@ -77,7 +77,7 @@ class TestGuard(unittest.TestCase):
             Resource()(http.Request.blank('/'))
         except http.UnauthorizedError as e:
             response = e.make_response()
-            assert response.headers['Content-Type'] == 'text/plain'
+            assert response.headers[b'Content-Type'] == 'text/plain'
             self.assertEqual(
               response.body,
               """401 Unauthorized\n\nchecker #1 failed\nchecker #2 failed\n""")

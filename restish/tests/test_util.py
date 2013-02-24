@@ -20,7 +20,7 @@ class TestWSGI(unittest.TestCase):
 
     def test_wsgi(self):
         request = http.Request.blank('/foo/bar', environ={'REQUEST_METHOD': 'GET'})
-        response = util.wsgi(request, wsgi_app, [u'foo', u'bar'])
+        response = util.wsgi(request, wsgi_app, ['foo', 'bar'])
         assert response.status == '200 OK'
         assert response.headers['Content-Type'] == 'text/plain'
         assert response.body == 'SCRIPT_NAME: , PATH_INFO: /foo/bar'
@@ -34,7 +34,7 @@ class TestWSGI(unittest.TestCase):
         Test a WSGIResource that is the root resource.
         """
         testapp = webtest.TestApp(app.RestishApp(util.WSGIResource(wsgi_app)))
-        response = testapp.get('/foo/bar', status=200)
+        response = testapp.get(b'/foo/bar', status=200)
         assert response.headers['Content-Type'] == 'text/plain'
         assert response.body == 'SCRIPT_NAME: , PATH_INFO: /foo/bar'
 
@@ -46,7 +46,7 @@ class TestWSGI(unittest.TestCase):
             def resource_child(self, request, segments):
                 return util.WSGIResource(wsgi_app), segments[1:]
         testapp = webtest.TestApp(app.RestishApp(Root()))
-        response = testapp.get('/foo/bar', status=200)
+        response = testapp.get(b'/foo/bar', status=200)
         assert response.headers['Content-Type'] == 'text/plain'
         assert response.body == 'SCRIPT_NAME: /foo, PATH_INFO: /bar'
 

@@ -18,6 +18,13 @@ _RESTISH_CHILD = "restish_child"
 _RESTISH_METHOD = "restish_method"
 _RESTISH_MATCH = "restish_match"
 
+try:
+    # Python 2
+    _NATIVE_BASESTRING = basestring
+except NameError:
+    # Python 3
+    _NATIVE_BASESTRING = (bytes, str)
+
 
 SHORT_CONTENT_TYPE_EXTRA = {
         b'json': b'application/json',
@@ -139,6 +146,8 @@ def _normalise_mimetype(mimetype):
     """
     Expand any shortcut mimetype names into a full mimetype
     """
+    if not isinstance(mimetype, bytes):
+        mimetype = mimetype.encode('utf-8')
     if b'/' in mimetype:
         return mimetype
     # Try mimetypes module, by extension.
@@ -329,7 +338,7 @@ def child(matcher=None):
             matcher = func.__name__
         # If the matcher is a string then create a TemplateChildMatcher in its
         # place.
-        if isinstance(matcher, basestring):
+        if isinstance(matcher, _NATIVE_BASESTRING):
             matcher = TemplateChildMatcher(matcher)
         # Annotate the function.
         setattr(func, _RESTISH_CHILD, matcher)

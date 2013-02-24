@@ -5,10 +5,29 @@ types for common HTTP errors.
 from __future__ import absolute_import, print_function, unicode_literals
 __metaclass__ = type
 
-import cgi
+try:
+    # Python 3
+    from html import escape
+except ImportError:
+    # Python 2
+    from cgi import escape
+
 import webob
 
 from restish import error, url
+
+def _n(s):
+    # Turn a string, bytes, or unicode into a "native" string, i.e. the type
+    # named by `str` in either Python 2 or 3.  Assume utf-8.
+    if str is bytes:
+        # Python 2.  The `unicode` built-in doesn't even exist in Python 2.
+        if isinstance(s, unicode):
+            return s.encode('utf-8')
+        return s
+    # Python 3.
+    if isinstance(s, str):
+        return s
+    return s.decode('utf-8')
 
 
 class Request(webob.Request):
@@ -159,7 +178,12 @@ def created(location, headers, body):
 
 # Redirection 3xx
 
-_REDIRECTION_PAGE = b"""<html>
+# This has to be a native string (str in both Python 2 and 3) in order to do
+# the string interpolation, and in order to escape the status and location
+# before that.  But, it must be coerced to bytes objects at the end of that
+# process.
+
+_REDIRECTION_PAGE = """<html>
 <head>
 <meta http-equiv="content-type" content="text/html;charset=utf-8" />
 <title>%(status)s</title>
@@ -182,9 +206,13 @@ def _redirect(status, location, headers=None):
         headers = []
     headers.extend([(b'Location', location),
                     (b'Content-Type', b'text/html')])
-    body = _REDIRECTION_PAGE % {b"status": cgi.escape(status),
-                                b"location": cgi.escape(location)}
-    return Response(status, headers, body)
+    # status and location must be strs in both Python 2 and 3, i.e. a native
+    # string.
+    body = _REDIRECTION_PAGE % {
+        "status": escape(_n(status)),
+        "location": escape(_n(location)),
+        }
+    return Response(status, headers, body.encode('utf-8'))
 
 
 def moved_permanently(location, headers=None):

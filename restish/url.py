@@ -52,7 +52,7 @@ def _decode(S):
 
 def _encode(S):
     """ Simple encode to utf8 if it's a unicode instance """
-    if isinstance(S, unicode):
+    if isinstance(S, _NATIVEUNICODE):
         return S.encode('utf-8')
     return S
 
@@ -128,7 +128,7 @@ def join_query(query_list):
     return '&'.join(one(KV) for KV in query_list)
 
 
-class URL(bytes):
+class URL(str):
     """
     URL class.
 

@@ -8,7 +8,7 @@ import webtest
 from restish import app, http, url
 
 
-def make_environ(path=b'/bar', base_url=b'http://localhost:1234/foo', **k):
+def make_environ(path='/bar', base_url='http://localhost:1234/foo', **k):
     return http.Request.blank(path, **k).environ
 
 
@@ -50,7 +50,8 @@ class TestRequestAttributes(unittest.TestCase):
 class TestResponseCreation(unittest.TestCase):
 
     def test_init_with_bytes(self):
-        return http.Response('200 OK', [('Content-Type', 'text/plain')], "bytes")
+        return http.Response('200 OK', [('Content-Type', 'text/plain')],
+                             [b"bytes"])
 
     def test_init_with_iter(self):
         def gen():
@@ -72,17 +73,18 @@ class TestResponseCreation(unittest.TestCase):
 class TestSuccessResponseFactories(unittest.TestCase):
 
     def test_ok(self):
-        r = http.ok([('Content-Type', 'text/plain')], b'Yay!')
+        r = http.ok([('Content-Type', 'text/plain')], [b'Yay!'])
         assert r.status.startswith('200')
         assert r.headers['Content-Type'] == 'text/plain'
         assert r.body == 'Yay!'
 
     def test_created(self):
         location = b'http://localhost/abc'
-        r = http.created(location, [('Content-Type', 'text/plain')], location)
+        r = http.created(location, [('Content-Type', 'text/plain')],
+                         [location])
         assert r.status.startswith('201')
         assert r.headers['Content-Type'] == 'text/plain'
-        assert r.headers['Location'] == location
+        assert r.headers[b'Location'] == location
         assert r.body == location
 
 
@@ -163,7 +165,7 @@ class TestClientErrorResponseFactories(unittest.TestCase):
     def test_bad_request(self):
         r = http.bad_request()
         assert r.status.startswith('400')
-        assert r.headers['Content-Type'] == 'text/plain'
+        assert r.headers[b'Content-Type'] == 'text/plain'
         assert '400 Bad Request' in r.body
         r = http.bad_request([('Content-Type', 'text/html')],
                              b'<p>400 Bad Request</p>')
@@ -176,23 +178,24 @@ class TestClientErrorResponseFactories(unittest.TestCase):
 
     def test_unauthorized(self):
         r = http.unauthorized([('Content-Type', 'text/html')],
-                              b'<p>Unauthorized</p>')
+                              [b'<p>Unauthorized</p>'])
         assert r.status.startswith('401')
         assert r.headers['Content-Type'] == 'text/html'
         assert r.body == b'<p>Unauthorized</p>'
-        exc = http.UnauthorizedError([('Content-Type', 'text/html')], '<p>Unauthorized</p>')
+        exc = http.UnauthorizedError([('Content-Type', 'text/html')],
+                                     [b'<p>Unauthorized</p>'])
         r = exc.make_response()
         assert r.status.startswith('401')
 
     def test_forbidden(self):
         r = http.forbidden()
         assert r.status.startswith('403')
-        assert r.headers['Content-Type'] == 'text/plain'
-        assert '403 Forbidden' in r.body
+        assert r.headers[b'Content-Type'] == 'text/plain'
+        assert b'403 Forbidden' in r.body
         r = http.forbidden([('Content-Type', 'text/html')],
                            b'<p>403 Forbidden</p>')
         assert r.status.startswith('403')
-        assert r.headers['Content-Type'] == 'text/html'
+        assert r.headers[b'Content-Type'] == 'text/html'
         assert r.body == b'<p>403 Forbidden</p>'
         exc = http.ForbiddenError()
         r = exc.make_response()
@@ -201,12 +204,12 @@ class TestClientErrorResponseFactories(unittest.TestCase):
     def test_not_found(self):
         r = http.not_found()
         assert r.status.startswith('404')
-        assert r.headers['Content-Type'] == 'text/plain'
+        assert r.headers[b'Content-Type'] == 'text/plain'
         assert '404 Not Found' in r.body
         r = http.not_found([('Content-Type', 'text/html')],
-                           b'<p>404 Not Found</p>')
+                           [b'<p>404 Not Found</p>'])
         assert r.status.startswith('404')
-        assert r.headers['Content-Type'] == 'text/html'
+        assert r.headers[b'Content-Type'] == 'text/html'
         assert r.body == b'<p>404 Not Found</p>'
         exc = http.NotFoundError()
         r = exc.make_response()
@@ -215,31 +218,31 @@ class TestClientErrorResponseFactories(unittest.TestCase):
     def test_method_not_allowed(self):
         r = http.method_not_allowed('GET, POST')
         assert r.status.startswith('405')
-        assert r.headers['Content-Type'] == 'text/plain'
-        assert r.headers['Allow'] == 'GET, POST'
+        assert r.headers[b'Content-Type'] == 'text/plain'
+        assert r.headers[b'Allow'] == 'GET, POST'
         assert '405 Method Not Allowed' in r.body
         r = http.method_not_allowed(['GET', 'POST'])
-        assert r.headers['Allow'] == 'GET, POST'
+        assert r.headers[b'Allow'] == 'GET, POST'
         exc = http.MethodNotAllowedError(['GET', 'POST'])
         r = exc.make_response()
         assert r.status.startswith('405')
 
     def test_not_acceptable(self):
         r = http.not_acceptable([('Content-Type', 'text/plain')],
-                                b'406 Not Acceptable')
+                                [b'406 Not Acceptable'])
         assert r.status.startswith('406')
         assert r.headers['Content-Type'] == 'text/plain'
-        assert '406 Not Acceptable' in r.body
+        assert b'406 Not Acceptable' in r.body
         exc = http.NotAcceptableError([('Content-Type', 'text/plain')],
                                       b'406 Not Acceptable')
         r = exc.make_response()
         assert r.status.startswith('406')
 
     def test_conflict(self):
-        r = http.conflict([('Content-Type', 'text/plain')], b'409 Conflict')
+        r = http.conflict([('Content-Type', 'text/plain')], [b'409 Conflict'])
         assert r.status.startswith('409')
         assert r.headers['Content-Type'] == 'text/plain'
-        assert '409 Conflict' in r.body
+        assert b'409 Conflict' in r.body
         exc = http.ConflictError([('Content-Type', 'text/plain')],
                                  b'409 Conflict')
         r = exc.make_response()
@@ -260,7 +263,9 @@ class TestServerErrorResponseFactories(unittest.TestCase):
             r1 = func(*a, **k)
             r2 = exc_cls(*a, **k).make_response()
             assert r1.status.startswith(status) and r2.status.startswith(status)
-            assert r1.headers['Content-Type'] == r2.headers['Content-Type'] == 'text/plain'
+            self.assertEqual(r1.headers[b'Content-Type'],
+                             r2.headers[b'Content-Type'])
+            self.assertEqual(r1.headers[b'Content-Type'], 'text/plain')
             assert status in r1.body and status in r2.body
 
 
