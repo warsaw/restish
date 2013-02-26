@@ -106,14 +106,15 @@ class TestApp(unittest.TestCase):
         """
         class WrappedResource(resource.Resource):
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/html')], b"WrappedResource")
+                return http.ok([('Content-Type', 'text/html')],
+                               [b"WrappedResource"])
         class WrapperResource(resource.Resource):
             @resource.GET(accept='html')
             def html(self, request):
                 return WrappedResource()
         A = app.RestishApp(WrapperResource())
         R = webtest.TestApp(A).get('/', status=200)
-        assert R.body == "WrappedResource"
+        self.assertEqual(R.body, b"WrappedResource")
 
     def test_resource_returns_func(self):
         def func(request):

@@ -79,12 +79,13 @@ class TestStreaming(unittest.TestCase):
             def close(self):
                 self.f.close()
         (fd, filename) = tempfile.mkstemp()
-        f = os.fdopen(fd, 'w')
-        f.write('file')
-        f.close()
-        f = open(filename)
-        R = webtest.TestApp(app.RestishApp(Resource(FileStreamer(f)))).get('/')
-        assert R.status.startswith('200')
-        assert R.body == 'file'
-        assert f.closed
-        os.remove(filename)
+        try:
+            with os.fdopen(fd, 'w') as f:
+                f.write('file')
+            with open(filename) as f:
+                resource = Resource(FileStreamer(f))
+                R = webtest.TestApp(app.RestishApp(resource)).get('/')
+            assert R.status.startswith('200')
+            assert R.body == 'file'
+        finally:
+            os.remove(filename)

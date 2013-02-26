@@ -9,6 +9,7 @@ __metaclass__ = type
 import unittest
 
 from restish import http, url
+from restish.http import _n
 
 U_POUND = '£'
 POUND = U_POUND.encode('utf-8')
@@ -110,7 +111,7 @@ class TestURL(unittest.TestCase):
         u = url.URL("http://localhost:1234/a/b/c?d&e=f#g")
         self.assertEquals(u.scheme, 'http')
         self.assertEquals(u.netloc, 'localhost:1234')
-        self.assertEquals(u.path, b'/a/b/c')
+        self.assertEquals(u.path, _n('/a/b/c'))
         self.assertEquals(u.path_segments, ['a', 'b', 'c'])
         self.assertEquals(u.query, 'd&e=f')
         self.assertEquals(u.query_list, [('d', None), ('e', 'f')])
@@ -165,11 +166,11 @@ class TestURL(unittest.TestCase):
         only.  Certain bytes should not be quoted.
         """
         urlpath = url.URL("http://example.com/foo/bar?baz=quux#foobar")
-        self.assertEqual(urlpath.path, b"/foo/bar")
+        self.assertEqual(urlpath.path, _n("/foo/bar"))
         urlpath = url.URL("http://example.com/foo%2Fbar?baz=quux#foobar")
-        self.assertEqual(urlpath.path, b"/foo%2Fbar")
+        self.assertEqual(urlpath.path, _n("/foo%2Fbar"))
         urlpath = url.URL("http://example.com/-_.!*'()?baz=quux#foo")
-        self.assertEqual(urlpath.path, b"/-_.!*'()")
+        self.assertEqual(urlpath.path, _n("/-_.!*'()"))
 
     def test_path_url(self):
         """

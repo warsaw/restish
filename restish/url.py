@@ -122,8 +122,8 @@ def join_query(query_list):
         if V is None:
             return _quote(_encode(K), SAFE_QUERY_NAME)
         else:
-            V = unicode(V)
-            return '%s=%s' % (_quote(_encode(K), SAFE_QUERY_NAME), \
+            V = _NATIVEUNICODE(V)
+            return '%s=%s' % (_quote(_encode(K), SAFE_QUERY_NAME),
                               _quote(_encode(V), SAFE_QUERY_VALUE))
     return '&'.join(one(KV) for KV in query_list)
 

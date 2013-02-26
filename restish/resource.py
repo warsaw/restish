@@ -279,12 +279,12 @@ def _dispatch(request, match, func):
     if isinstance(response, http.Response) and \
             not response.headers.get('content-type'):
         accept = str(request.accept)
-        if not accept and len(match['accept']) == 1:
-            best_match = match['accept'][0]
+        if not accept and len(match[b'accept']) == 1:
+            best_match = match[b'accept'][0]
         else:
             # XXX mimeparse picks *last* matching item so we reverse.
-            best_match = mimeparse.best_match(match['accept'][::-1], accept)
-        if '*' not in best_match:
+            best_match = mimeparse.best_match(match[b'accept'][::-1], accept)
+        if b'*' not in best_match:
             response.headers['content-type'] = best_match
     return response
 
@@ -314,7 +314,7 @@ def _filter_dispatchers_on_content_type(dispatchers, content_type):
 
 
 def _filter_dispatchers_on_accept(dispatchers, accept):
-    return _filter_dispatchers_on_match(dispatchers, 'accept', accept)
+    return _filter_dispatchers_on_match(dispatchers, b'accept', accept)
 
 
 def _filter_dispatchers_on_match(dispatchers, match, value):
