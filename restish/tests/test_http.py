@@ -76,7 +76,7 @@ class TestSuccessResponseFactories(unittest.TestCase):
         r = http.ok([('Content-Type', 'text/plain')], [b'Yay!'])
         assert r.status.startswith('200')
         assert r.headers['Content-Type'] == 'text/plain'
-        assert r.body == 'Yay!'
+        self.assertEqual(r.body, b'Yay!')
 
     def test_created(self):
         location = b'http://localhost/abc'

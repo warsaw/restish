@@ -65,7 +65,7 @@ class TestStreaming(unittest.TestCase):
         self.assertEqual(R.body, b'bytesio')
 
     def test_file(self):
-        class FileStreamer(object):
+        class FileStreamer:
             def __init__(self, f):
                 self.f = f
             def __iter__(self):
@@ -80,12 +80,13 @@ class TestStreaming(unittest.TestCase):
                 self.f.close()
         (fd, filename) = tempfile.mkstemp()
         try:
-            with os.fdopen(fd, 'w') as f:
-                f.write('file')
-            with open(filename) as f:
+            with os.fdopen(fd, 'wb') as f:
+                f.write(b'file')
+            with open(filename, 'rb') as f:
                 resource = Resource(FileStreamer(f))
-                R = webtest.TestApp(app.RestishApp(resource)).get('/')
+                test_app = webtest.TestApp(app.RestishApp(resource))
+                R = test_app.get('/')
             assert R.status.startswith('200')
-            assert R.body == 'file'
+            self.assertEqual(R.body, b'file')
         finally:
             os.remove(filename)

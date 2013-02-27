@@ -270,14 +270,15 @@ class TestChildLookup(unittest.TestCase):
             def __call__(self, request):
                 joined_segments = '/'.join(self.segments)
                 return http.ok([('Content-Type', 'text/plain')],
-                               joined_segments.encode('utf-8'))
+                               [joined_segments.encode('utf-8')])
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/explicitly_named_child')
         assert R.status.startswith('200')
-        assert R.body == 'explicitly_named_child'
-        R = webtest.TestApp(A).get(url.join_path([u'éxpliçítly_nämed_child_with_unicøde']))
+        self.assertEqual(R.body, b'explicitly_named_child')
+        R = webtest.TestApp(A).get(
+            url.join_path([u'éxpliçítly_nämed_child_with_unicøde']))
         assert R.status.startswith('200')
-        assert R.body == 'explicitly_named_child_with_unicode'
+        self.assertEqual(R.body, 'explicitly_named_child_with_unicode')
 
     def test_segment_consumption(self):
         class Resource(resource.Resource):
@@ -343,11 +344,11 @@ class TestChildLookup(unittest.TestCase):
                     '%s: %s' % (key, value)
                     for key, value in self.args.items()).encode('utf-8')
                 body = b'[' + byte_segments + b'] {' + byte_args + b'}'
-                return http.ok([('Content-Type', 'text/plain')], body)
+                return http.ok([('Content-Type', 'text/plain')], [body])
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/users/foo')
         assert R.status.startswith('200')
-        self.assertEqual(R.body, "[users, foo] {username: foo}")
+        self.assertEqual(R.body, b"[users, foo] {username: foo}")
 
     def test_any_match(self):
         class Resource(resource.Resource):
@@ -360,11 +361,11 @@ class TestChildLookup(unittest.TestCase):
                 # Must return a bytes object.
                 joined_segments = (', '.join(self.segments)).encode('utf-8')
                 body = b'[' + joined_segments + b']'
-                return http.ok([('Content-Type', 'text/plain')], body)
+                return http.ok([('Content-Type', 'text/plain')], [body])
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/foo')
         assert R.status.startswith('200')
-        self.assertEqual(R.body, "[foo]")
+        self.assertEqual(R.body, b"[foo]")
 
     def test_specificity(self):
         """
@@ -377,7 +378,7 @@ class TestChildLookup(unittest.TestCase):
                 return self.__class__(self.segments+segments), []
             def __call__(self, request):
                 return http.ok([('Content-Type', 'text/plain')],
-                               '/'.join(self.segments).encode('utf-8'))
+                               ['/'.join(self.segments).encode('utf-8')])
         class Resource(resource.Resource):
             @resource.child('a/b/c')
             def _1(self, request, segments):
@@ -407,20 +408,20 @@ class TestChildLookup(unittest.TestCase):
             def any(self, request, segments):
                 return Capture(['<any>'])
         tests = [
-                ('/a/b/c', 'a/b/c'),
-                ('/a/b/foo', 'a/b/{c}'),
-                ('/a/foo/c/bar', 'a/{b}/c/{d}'),
-                ('/a/b/foo/bar', 'a/b/{c}/{d}'),
-                ('/a/foo/bar', 'a/{b}/{c}'),
-                ('/a', 'a'),
-                ('/foo/b/c', '{a}/b/c'),
-                ('/fixed/123/foo', 'fixed/{dynamic}/foo'),
-                ('/foo', '<any>/foo'),
+                ('/a/b/c', b'a/b/c'),
+                ('/a/b/foo', b'a/b/{c}'),
+                ('/a/foo/c/bar', b'a/{b}/c/{d}'),
+                ('/a/b/foo/bar', b'a/b/{c}/{d}'),
+                ('/a/foo/bar', b'a/{b}/{c}'),
+                ('/a', b'a'),
+                ('/foo/b/c', b'{a}/b/c'),
+                ('/fixed/123/foo', b'fixed/{dynamic}/foo'),
+                ('/foo', b'<any>/foo'),
                 ]
         A = app.RestishApp(Resource())
         for path, expected in tests:
             R = webtest.TestApp(A).get(path)
-            assert R.body == expected
+            self.assertEqual(R.body, expected)
 
     def test_unquoted(self):
         """
@@ -443,15 +444,15 @@ class TestChildLookup(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.child()
             def foo(self, request, segments):
-                return http.ok([('Content-Type', 'text/plain')], b'foobar')
+                return http.ok([('Content-Type', 'text/plain')], [b'foobar'])
         # Check a leaf child (no more segments).
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/foo')
-        assert R.body == 'foobar'
+        self.assertEqual(R.body, b'foobar')
         # Check a branch child (additional segments)
         A = app.RestishApp(Resource())
         R = webtest.TestApp(A).get('/foo/bar')
-        assert R.body == 'foobar'
+        self.assertEqual(R.body, b'foobar')
 
     def test_root_is_a_response(self):
         A = app.RestishApp(http.ok(
@@ -481,9 +482,9 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='text/html')
             def html(self, request):
-                return http.ok([], b'<p>Hello!</p>')
+                return http.ok([], [b'<p>Hello!</p>'])
         response = make_app(Resource()).get('/')
-        assert response.headers['Content-Type'] == 'text/html'
+        self.assertEqual(response.headers['Content-Type'], b'text/html')
 
     def test_implicit_content_type_not_on_partial_mimetype(self):
         """
@@ -508,9 +509,10 @@ class TestAcceptContentNegotiation(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='text/html')
             def html(self, request):
-                return http.ok([('Content-Type', 'text/plain')], b'<p>Hello!</p>')
+                return http.ok([('Content-Type', 'text/plain')],
+                               [b'<p>Hello!</p>'])
         response = make_app(Resource()).get('/')
-        assert response.headers['Content-Type'] == 'text/plain'
+        self.assertEqual(response.headers['Content-Type'], 'text/plain')
 
     def test_no_accept(self):
         """
@@ -855,12 +857,11 @@ class TestShortAccepts(unittest.TestCase):
         class Resource(resource.Resource):
             @resource.GET(accept='unknown')
             def unknown(self, request):
-                return http.ok([], b"{}")
+                return http.ok([], [b"{}"])
         response = make_app(Resource()).get('/')
         assert response.status == "200 OK"
-        assert response.headers['Content-Type'] == 'unknown'
+        self.assertEqual(response.headers['Content-Type'], b'unknown')
 
 
 if __name__ == '__main__':
     unittest.main()
-
