@@ -171,7 +171,7 @@ class TestRendering(unittest.TestCase):
         response = templating.render_response(request, None, 'page')
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/html; charset=utf-8'
-        self.assertEqual(response.body, "page ['element', 'urls']")
+        self.assertEqual(response.body, b"page ['element', 'urls']")
 
     def test_encoding(self):
         """

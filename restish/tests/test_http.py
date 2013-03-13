@@ -252,23 +252,24 @@ class TestClientErrorResponseFactories(unittest.TestCase):
 class TestServerErrorResponseFactories(unittest.TestCase):
 
     tests = [
-        (http.internal_server_error, http.InternalServerError, [], {}, '500'),
-        (http.bad_gateway, http.BadGatewayError, [], {}, '502'),
-        (http.service_unavailable, http.ServiceUnavailableError, [], {}, '503'),
-        (http.gateway_timeout, http.GatewayTimeoutError, [], {}, '504'),
+        (http.internal_server_error, http.InternalServerError, [], {}, b'500'),
+        (http.bad_gateway, http.BadGatewayError, [], {}, b'502'),
+        (http.service_unavailable,
+         http.ServiceUnavailableError, [], {}, b'503'),
+        (http.gateway_timeout, http.GatewayTimeoutError, [], {}, b'504'),
     ]
 
     def test_responses(self):
         for func, exc_cls, a, k, status in self.tests:
             r1 = func(*a, **k)
             r2 = exc_cls(*a, **k).make_response()
-            assert r1.status.startswith(status) and r2.status.startswith(status)
+            self.assertEqual(r1.status[:3], status)
+            self.assertEqual(r2.status[:3], status)
             self.assertEqual(r1.headers[b'Content-Type'],
                              r2.headers[b'Content-Type'])
-            self.assertEqual(r1.headers[b'Content-Type'], 'text/plain')
+            self.assertEqual(r1.headers[b'Content-Type'], b'text/plain')
             assert status in r1.body and status in r2.body
 
 
 if __name__ == '__main__':
     unittest.main()
-

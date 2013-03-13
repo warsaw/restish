@@ -549,7 +549,8 @@ class TestAcceptContentNegotiation(unittest.TestCase):
             @resource.GET(accept='application/json')
             def json(self, request):
                 return http.ok([('Content-Type', 'application/json')], b"{}")
-        make_app(Resource()).get('/', headers=[('Accept', _n('application/json'))], status=200)
+        app = make_app(Resource())
+        app.get('/', headers=[('Accept', _n('application/json'))], status=200)
 
     def test_accept_non_match(self):
         """
@@ -694,9 +695,11 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
             @resource.POST(content_type=['json'])
             def json(self, request):
                 return http.ok([('Content-Type', 'application/json')], b'json')
-        response = make_app(Resource()).post(b'/', headers={'Content-Type': b'application/json'},
-                                             status=200)
-        assert response.body == 'json'
+        app = make_app(Resource())
+        response = app.post(
+            _n('/'), headers={'Content-Type': _n('application/json')},
+            status=200)
+        self.assertEqual(response.body, 'json')
 
     def test_match(self):
         """

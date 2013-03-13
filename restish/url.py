@@ -16,6 +16,9 @@ SAFE_SEGMENT = SAFE
 SAFE_QUERY_NAME = SAFE
 SAFE_QUERY_VALUE = SAFE + b'='
 
+BSLASH = b'/'
+
+
 try:
     # Python 2
     _NATIVEUNICODE = unicode
@@ -89,8 +92,17 @@ def join_path(path_segments):
     """
     if not path_segments:
         return b''
-    return b'/' + b'/'.join([_quote((_encode(seg)), SAFE_SEGMENT)
-        for seg in path_segments])
+    # In Python 3, urllib.parse.quote() will turn bytes arguments back into a
+    # str, but this breaks our contract.  Since the return value of quote() is
+    # guaranteed to be an ASCII string, it's safe to re-encode back into
+    # bytes.  In Python 2 however, the returned value will be a bytes
+    # (a.k.a. str) so no conversion is necessary.  IOW, quote() returns a
+    # "native string" but we want to return bytes here.  Unfortunately, quote
+    # also *requires* a native string, so we have to do conversions on both
+    # ends.
+    return BSLASH + BSLASH.join(
+        _encode(_quote(_n(seg), SAFE_SEGMENT))
+        for seg in path_segments)
 
 
 def _split_query(query):

@@ -310,7 +310,8 @@ def _best_dispatcher(dispatchers, request):
 
 
 def _filter_dispatchers_on_content_type(dispatchers, content_type):
-    return _filter_dispatchers_on_match(dispatchers, 'content_type', content_type)
+    return _filter_dispatchers_on_match(
+        dispatchers, b'content_type', content_type)
 
 
 def _filter_dispatchers_on_accept(dispatchers, accept):
@@ -325,7 +326,10 @@ def _filter_dispatchers_on_match(dispatchers, match, value):
     # Find the best match
     # XXX mimeparse picks *last* matching item so we reverse.
     supported.reverse()
-    best_match = mimeparse.best_match(supported, value)
+    try:
+        best_match = mimeparse.best_match(supported, value)
+    except TypeError:
+        import pdb; pdb.set_trace()
     # Return the matching dispatchers
     return [d for d in dispatchers if best_match in d[1][match]]
 
