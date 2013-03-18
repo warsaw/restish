@@ -2,7 +2,14 @@
 HTTP Request and Response objects, simple Response factories and exceptions
 types for common HTTP errors.
 """
-import cgi
+
+try:
+    # Python 3
+    from html import escape
+except ImportError:
+    # Python 2
+    from cgi import escape
+
 import webob
 
 from restish import error, url
@@ -182,8 +189,8 @@ def _redirect(status, location, headers=None):
         headers = []
     headers.extend([('Location', location),
                     ('Content-Type', 'text/html')])
-    body = _REDIRECTION_PAGE % {"status": cgi.escape(status),
-                                "location": cgi.escape(location)}
+    body = _REDIRECTION_PAGE % {"status": escape(status),
+                                "location": escape(location)}
     return Response(status, headers, body)
 
 

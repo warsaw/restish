@@ -1,9 +1,18 @@
-import cStringIO
-import StringIO
 import os
 import tempfile
 import unittest
 import webtest
+
+try:
+    # Python 2
+    import cStringIO
+    import StringIO
+except ImportError:
+    # Python3
+    cStringIO = StringIO = None
+
+from io import BytesIO
+
 
 from restish import app, http, resource
 

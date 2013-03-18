@@ -1,5 +1,10 @@
-import urlparse
-import urllib
+try:
+    # Python 3
+    from urllib.parse import quote, unquote, unquote_plus, urlsplit, urlunsplit
+except ImportError:
+    # Python 2
+    from urlparse import urlsplit, urlunsplit
+    from urllib import quote, unquote, unquote_plus
 
 
 # Lists of characters considered "safe", i.e. should not be escape encoded.
@@ -27,19 +32,19 @@ def _encode(S):
 
 def _quote(S, safe):
     """ urllib quote - see top of module for range of safe definitions """
-    return urllib.quote(S, safe)
+    return quote(S, safe)
 
 
 def _unquote(S):
     """ urllib unquote """
-    return urllib.unquote_plus(S)
+    return unquote_plus(S)
 
 
 def split_path(path):
     """
     Split a path of type str into a sequence of unicode segments.
     """
-    segments = [urllib.unquote(segment) for segment in path.split('/')]
+    segments = [unquote(segment) for segment in path.split('/')]
     if segments[:1] == ['']:
         segments = segments[1:]
     return [_decode(S) for S in segments]
@@ -110,13 +115,13 @@ class URL(str):
         Create a new URL instance from a str URL.
         """
         str.__init__(url)
-        self.parsed_url = urlparse.urlsplit(url)
+        self.parsed_url = urlsplit(url)
 
     def __eq__(self, other):
         if isinstance(other, URL):
             return self.parsed_url == other.parsed_url
         elif isinstance(other, str):
-            return self.parsed_url == urlparse.urlsplit(other)
+            return self.parsed_url == urlsplit(other)
         return False
 
     @property
@@ -182,8 +187,8 @@ class URL(str):
             query_ = query
         if fragment is not _UNSET:
             fragment_ = fragment
-        return self.__class__(urlparse.urlunsplit((scheme_, netloc_, path_,
-                                                   query_, fragment_)))
+        return self.__class__(urlunsplit((scheme_, netloc_, path_,
+                                          query_, fragment_)))
 
     ## path manipulations ##
 
@@ -227,7 +232,7 @@ class URL(str):
         Create a url as if the current url was given by ``self`` and ``href``
         was clicked on
         """
-        scheme, netloc, path, query, fragment = urlparse.urlsplit(href)
+        scheme, netloc, path, query, fragment = urlsplit(href)
 
         # Return self if the click URL is empty.
         if (scheme, netloc, path, query, fragment) == ('', '', '', '', ''):
