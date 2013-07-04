@@ -77,22 +77,24 @@ class TestUtils(unittest.TestCase):
 
     def test_join_path(self):
         self.assertEquals(url.join_path([]), b'')
-        self.assertEquals(url.join_path(['']), '/')
-        self.assertEquals(url.join_path(['', '']), '//')
-        self.assertEquals(url.join_path(['foo']), '/foo')
-        self.assertEquals(url.join_path(['foo', 'bar']), '/foo/bar')
-        self.assertEquals(url.join_path(['/']), '/%2F')
-        self.assertEquals(url.join_path([U_POUND]), '/%C2%A3')
+        self.assertEquals(url.join_path(['']), b'/')
+        self.assertEquals(url.join_path(['', '']), b'//')
+        self.assertEquals(url.join_path(['foo']), b'/foo')
+        self.assertEquals(url.join_path(['foo', 'bar']), b'/foo/bar')
+        self.assertEquals(url.join_path(['/']), b'/%2F')
+        self.assertEquals(url.join_path([U_POUND]), b'/%C2%A3')
 
     def test_split_query(self):
-        self.assertEquals(url.split_query(''), [])
-        self.assertEquals(url.split_query('a=1&b=2'), [('a', '1'), ('b', '2')])
-        self.assertEquals(url.split_query('a&b=2'), [('a', None), ('b', '2')])
-        self.assertEquals(url.split_query('a'), [('a', None)])
-        self.assertEquals(url.split_query('=1'), [('', '1')])
-        self.assertEquals(url.split_query('a=1=2'), [('a', '1=2')])
-        self.assertEquals(url.split_query('a=%3F'), [('a', '?')])
-        self.assertEquals(url.split_query(b'%C2%A3=%C2%A3'), [(U_POUND, U_POUND)])
+        self.assertEquals(url.split_query(b''), [])
+        self.assertEquals(url.split_query(b'a=1&b=2'),
+                          [('a', '1'), ('b', '2')])
+        self.assertEquals(url.split_query(b'a&b=2'), [('a', None), ('b', '2')])
+        self.assertEquals(url.split_query(b'a'), [('a', None)])
+        self.assertEquals(url.split_query(b'=1'), [('', '1')])
+        self.assertEquals(url.split_query(b'a=1=2'), [('a', '1=2')])
+        self.assertEquals(url.split_query(b'a=%3F'), [('a', '?')])
+        self.assertEquals(url.split_query(b'%C2%A3=%C2%A3'),
+                          [(U_POUND, U_POUND)])
 
     def test_join_query(self):
         self.assertEquals(url.join_query([]), '')
@@ -444,9 +446,9 @@ class TestURL(unittest.TestCase):
         self.failUnless(u != object(), "URL must be differ from an object.")
 
     def test_parseEqualInParamValue(self):
-        S = b'http://localhost/?=x=x=x'
+        S = 'http://localhost/?=x=x=x'
         u = url.URL(S)
-        self.assertEqual(u.query, b'=x=x=x')
+        self.assertEqual(u.query, '=x=x=x')
         self.assertEqual(u.query_list, [('', 'x=x=x')])
         self.assertEqual(u, S)
         self.assertEqual(u.clone(), S)
@@ -478,7 +480,7 @@ class Serialization(unittest.TestCase):
     def test_strangeSegs(self):
         base = b'http://localhost/'
         tests = (
-            (r'/foo/', b'%2Ffoo%2F'),
+            (r'/foo/', '%2Ffoo%2F'),
             (r'c:\foo\bar bar', b'c%3A%5Cfoo%5Cbar%20bar'),
             (r'&<>', b'%26%3C%3E'),
             (u'!"\N{POUND SIGN}$%^&*()_+'.encode('utf-8'),
@@ -502,7 +504,7 @@ class Serialization(unittest.TestCase):
 class TestURLAccessor(unittest.TestCase):
 
     def setUp(self):
-        self.host_url = url.URL("http://localhost:1234")
+        self.host_url = url.URL(b"http://localhost:1234")
         self.application_url = self.host_url.child('app')
         self.url = self.application_url.child('resource').add_query('foo', 'bar')
         self.request = http.Request.blank('/resource?foo=bar', base_url=self.application_url)

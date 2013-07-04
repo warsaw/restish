@@ -67,6 +67,8 @@ def _quote(S, safe):
 
 def _unquote(S):
     """ urllib unquote """
+    if not isinstance(S, _NATIVEUNICODE):
+        S = S.decode('utf-8')
     return unquote_plus(S)
 
 
