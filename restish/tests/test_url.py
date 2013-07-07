@@ -7,7 +7,11 @@ import unittest
 
 from restish import http, url
 
-POUND = '£'.decode('utf-8')
+try:
+    POUND = '£'.decode('utf-8')
+except AttributeError:
+    # Python 3
+    POUND = '£'
 
 theurl = "http://www.foo.com:80/a/nice/path/?zot=23&zut"
 

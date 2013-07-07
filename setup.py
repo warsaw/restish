@@ -37,7 +37,7 @@ or database engine.
       zip_safe=False,
       install_requires=[
           # -*- Extra requirements: -*-
-          'mimeparse>=0.1.3',
+          'python-mimeparse',
           'WebOb',
       ],
       entry_points="""
