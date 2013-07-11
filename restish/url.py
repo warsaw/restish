@@ -16,6 +16,12 @@ SAFE_QUERY_VALUE = SAFE + '='
 
 # Marker object for unset attributes when None is a meaningful value.
 _UNSET = object()
+try:
+    # Python 2
+    _UNICODE_TYPE = unicode
+except NameError:
+    # Python 3
+    _UNICODE_TYPE = str
 
 
 def _decode(S):
@@ -25,7 +31,7 @@ def _decode(S):
 
 def _encode(S):
     """ Simple encode to utf8 if it's a unicode instance """
-    if isinstance(S, unicode):
+    if isinstance(S, _UNICODE_TYPE):
         return S.encode('utf-8')
     return S
 
@@ -42,12 +48,12 @@ def _unquote(S):
 
 def split_path(path):
     """
-    Split a path of type str into a sequence of unicode segments.
+    Split a path of type str into a sequence of unicode/str segments.
     """
     segments = [unquote(segment) for segment in path.split('/')]
     if segments[:1] == ['']:
         segments = segments[1:]
-    return [_decode(S) for S in segments]
+    return [_decode(S) if isinstance(S, bytes) else S for S in segments]
 
 
 def join_path(path_segments):
@@ -66,9 +72,12 @@ def _split_query(query):
     """
     for x in query.split('&'):
         if '=' in x:
-            yield tuple(_decode(_unquote(s)) for s in x.split('=', 1))
+            uq = [_unquote(s) for s in x.split('=', 1)]
+            yield tuple(_decode(s) if isinstance(s, bytes) else s
+                        for s in uq)
         elif x:
-            yield (_decode(_unquote(x)), None)
+            uq = _unquote(x)
+            yield (_decode(uq) if isinstance(uq, bytes) else uq, None)
 
 
 def split_query(query):
@@ -88,7 +97,7 @@ def join_query(query_list):
         if V is None:
             return _quote(_encode(K), SAFE_QUERY_NAME)
         else:
-            V = unicode(V)
+            V = _UNICODE_TYPE(V)
             return '%s=%s' % (_quote(_encode(K), SAFE_QUERY_NAME), \
                               _quote(_encode(V), SAFE_QUERY_VALUE))
     return '&'.join(one(KV) for KV in query_list)
@@ -124,6 +133,9 @@ class URL(str):
             return self.parsed_url == urlsplit(other)
         return False
 
+    # Python 3 requires __hash__() when __eq__() is defined.
+    __hash__ = str.__hash__
+
     @property
     def scheme(self):
         """ The url scheme (http, https, etc) """
@@ -142,7 +154,7 @@ class URL(str):
     @property
     def path_qs(self):
         """ The path, query string and fragment """
-        return self.clone(scheme=None, netloc=None)
+        return self.clone(scheme='', netloc='')
 
     @property
     def path_segments(self):
@@ -294,7 +306,7 @@ class URL(str):
                     ``?key=``
         """
         if value is not None:
-            value = unicode(value)
+            value = _UNICODE_TYPE(value)
         ql = self.query_list
         ## Preserve the original position of the query key in the list
         i = 0
@@ -302,7 +314,7 @@ class URL(str):
             if k == name:
                 break
             i += 1
-        q = filter(lambda x: x[0] != name, ql)
+        q = list(filter(lambda x: x[0] != name, ql))
         q.insert(i, (name, value))
         return self.clone(query=join_query(q))
 
