@@ -2,6 +2,13 @@ import unittest
 
 from restish import http, resource, templating
 
+try:
+    # Python 2
+    _UNICODE_TYPE = unicode
+except NameError:
+    # Python 3
+    _UNICODE_TYPE = str
+
 
 class TestModule(unittest.TestCase):
 
@@ -62,7 +69,10 @@ class TestArgs(unittest.TestCase):
     def test_overloading(self):
         class Templating(templating.Templating):
             def render(self, request, template, args=None, encoding=None):
-                return repr(args)
+                r = repr(args)
+                if not isinstance(r, bytes):
+                    r = r.encode('utf-8')
+                return [r]
             def args(self, request):
                 args = super(Templating, self).args(request)
                 args['extra_arg'] = None
@@ -93,10 +103,10 @@ class TestArgs(unittest.TestCase):
         def element(element, request):
             return {}
         request = http.Request.blank('/', environ={'restish.templating': T})
-        for name in ['extra_arg', 'extra_element_arg', 'extra_page_arg']:
+        for name in [b'extra_arg', b'extra_element_arg', b'extra_page_arg']:
             assert name in page(None, request).body
-        for name in ['extra_arg', 'extra_element_arg']:
-            assert name in element(None, request)
+        for name in [b'extra_arg', b'extra_element_arg']:
+            assert name in element(None, request)[0]
 
 
 class TestRendering(unittest.TestCase):
@@ -106,7 +116,7 @@ class TestRendering(unittest.TestCase):
             templating.Templating(None).render(http.Request.blank('/'),
                                                'foo.html')
         except TypeError as e:
-            assert 'renderer' in unicode(e)
+            assert 'renderer' in _UNICODE_TYPE(e)
 
     def test_render(self):
         def renderer(template, args, encoding=None):
@@ -128,19 +138,25 @@ class TestRendering(unittest.TestCase):
 
     def test_render_response(self):
         def renderer(template, args, encoding=None):
-            return "%s %r" % (template, sorted(args))
+            r = "%s %r" % (template, sorted(args))
+            if not isinstance(r, bytes):
+                r = r.encode('utf-8')
+            return [r]
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
         response = templating.render_response(request, None, 'page')
         assert response.status == "200 OK"
         assert response.headers['Content-Type'] == 'text/html; charset=utf-8'
-        assert response.body == "page ['element', 'urls']"
+        assert response.body == b"page ['element', 'urls']"
 
     def test_encoding(self):
         """
         Check that only a rendered page encoded output by default.
         """
         def renderer(template, args, encoding=None):
-            return str(encoding)
+            r = str(encoding)
+            if not isinstance(r, bytes):
+                r = r.encode('utf-8')
+            return [r]
         @templating.element('element')
         def element(element, request):
             return {}
@@ -148,9 +164,9 @@ class TestRendering(unittest.TestCase):
         def page(page, request):
             return {}
         request = http.Request.blank('/', environ={'restish.templating': templating.Templating(renderer)})
-        assert templating.render(request, 'render') == 'None'
-        assert element(None, request) == 'None'
-        assert page(None, request).body == 'utf-8'
+        assert templating.render(request, 'render')[0] == b'None'
+        assert element(None, request)[0] == b'None'
+        assert page(None, request).body == b'utf-8'
 
 
 class TestPage(unittest.TestCase):
