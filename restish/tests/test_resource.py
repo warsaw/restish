@@ -200,7 +200,7 @@ class TestChildLookup(unittest.TestCase):
         class Resource(resource.Resource):
             pass
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/404', status=404)
+        webtest.TestApp(A).get('/404', status=404)
 
     def test_matcher_404(self):
         class Resource(resource.Resource):
@@ -208,7 +208,7 @@ class TestChildLookup(unittest.TestCase):
             def child(self, request, segments):
                 return
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/404', status=404)
+        webtest.TestApp(A).get('/404', status=404)
 
     def test_nameless_child(self):
         class Resource(resource.Resource):
@@ -444,9 +444,9 @@ class TestAcceptContentNegotiation(unittest.TestCase):
             @resource.GET(accept='text/json')
             def html(self, request):
                 return http.ok([], '<p>Hello!</p>')
-        response = make_app(Resource()).get('/',
-                                            headers={'Accept': 'text/plain'},
-                                            status=406)
+        make_app(Resource()).get('/',
+                                 headers={'Accept': 'text/plain'},
+                                 status=406)
 
     def test_implicit_content_type(self):
         """
@@ -695,8 +695,9 @@ class TestContentTypeContentNegotiation(unittest.TestCase):
             @resource.POST(content_type=['json'])
             def json(self, request):
                 return http.ok([('Content-Type', 'application/json')], 'json')
-        response = make_app(Resource()).post('/', headers={'Content-Type': 'application/xml'},
-                                             status=406)
+        make_app(Resource()).post('/',
+                                  headers={'Content-Type': 'application/xml'},
+                                  status=406)
 
     def test_specificity(self):
         """

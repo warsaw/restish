@@ -55,8 +55,8 @@ class TestApplicationURLAccessor(unittest.TestCase):
 
 class RendererTestMixin(object):
     """
-    Mixin class for any templating engine -specific tests we can run (depends on
-    imports).
+    Mixin class for any templating engine -specific tests we can run
+    (depends on imports).
 
     XXX This is written as a mixin-style thingy to stop the standard unittest
     test collector picking it up as a TestCase.
@@ -64,22 +64,22 @@ class RendererTestMixin(object):
 
     def setUp(self):
         self.tmpdir = tempfile.mkdtemp()
-        self.add_content('static', "<p>A '£' symbol often breaks web pages.</p>".decode('utf-8'))
+        self.add_content(
+            'static',
+            "<p>A '£' symbol often breaks web pages.</p>".decode('utf-8'))
 
     def tearDown(self):
         shutil.rmtree(self.tmpdir)
 
     def add_content(self, name, content):
-        f = file(os.path.join(self.tmpdir, name), 'w')
-        f.write(content.encode('utf-8'))
-        f.close()
+        with open(os.path.join(self.tmpdir, name), 'w') as f:
+            f.write(content.encode('utf-8'))
 
     def content(self, name, encoding=None):
-        f = file(os.path.join(self.tmpdir, name))
-        content = f.read().decode('utf-8')
+        with open(os.path.join(self.tmpdir, name)) as f:
+            content = f.read().decode('utf-8')
         if encoding:
             content = content.encode(encoding)
-        f.close()
         return content
 
     def test_render(self):
@@ -175,7 +175,10 @@ try:
             # Configure Django's global config a bit. Yuck, yuck, yuck!
             if not settings.configured:
                 settings.configure(
-                    TEMPLATE_LOADERS=['django.template.loaders.filesystem.load_template_source'],
+                    TEMPLATE_LOADERS=[
+                    'django.template.loaders.filesystem.Loader',
+#                    'django.template.loaders.filesystem.load_template_source'
+                     ],
                 )
             # Configure the per-test settings.
             settings.TEMPLATE_DIRS = [self.tmpdir]

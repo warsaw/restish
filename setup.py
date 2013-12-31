@@ -1,5 +1,4 @@
 from setuptools import setup, find_packages
-import sys, os
 
 version = '0.12.1'
 
@@ -37,7 +36,7 @@ or database engine.
       zip_safe=False,
       install_requires=[
           # -*- Extra requirements: -*-
-          'mimeparse>=0.1.3',
+          'python-mimeparse',
           'WebOb',
       ],
       entry_points="""

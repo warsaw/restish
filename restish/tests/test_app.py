@@ -29,17 +29,18 @@ class TestApp(unittest.TestCase):
 
     def test_not_found(self):
         A = app.RestishApp(resource.Resource())
-        R = webtest.TestApp(A).get('/not_found', status=404)
+        webtest.TestApp(A).get('/not_found', status=404)
 
     def test_not_found_on_none(self):
         class Resource(resource.Resource):
             def resource_child(self, request, segments):
                 return None
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/not_found', status=404)
+        webtest.TestApp(A).get('/not_found', status=404)
 
     def test_children(self):
-        A = app.RestishApp(Resource('root', {'foo': Resource('foo'), 'bar': Resource('bar')}))
+        A = app.RestishApp(
+            Resource('root', {'foo': Resource('foo'), 'bar': Resource('bar')}))
         R = webtest.TestApp(A).get('/', status=200)
         assert R.body == 'root'
         R = webtest.TestApp(A).get('/foo', status=200)
@@ -65,7 +66,9 @@ class TestApp(unittest.TestCase):
             def resource_child(self, request, segments):
                 return self.__class__(segments), []
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], repr(self.segments))
+                return http.ok(
+                    [('Content-Type', 'text/plain')],
+                    repr(self.segments))
         class WrapperResource(object):
             def resource_child(self, request, segments):
                 return WrappedResource()
@@ -89,7 +92,8 @@ class TestApp(unittest.TestCase):
         """
         class WrappedResource(resource.Resource):
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/html')], "WrappedResource")
+                return http.ok(
+                    [('Content-Type', 'text/html')], "WrappedResource")
         class WrapperResource(resource.Resource):
             @resource.GET(accept='html')
             def html(self, request):
@@ -114,14 +118,14 @@ class TestApp(unittest.TestCase):
             def __call__(self, request):
                 raise http.BadRequestError()
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/', status=400)
+        webtest.TestApp(A).get('/', status=400)
 
     def test_server_error(self):
         class Resource(resource.Resource):
             def __call__(self, request):
                 raise http.BadGatewayError()
         A = app.RestishApp(Resource())
-        R = webtest.TestApp(A).get('/', status=502)
+        webtest.TestApp(A).get('/', status=502)
 
     def test_no_root_application(self):
         class Resource(resource.Resource):
@@ -130,11 +134,14 @@ class TestApp(unittest.TestCase):
             def resource_child(self, request, segments):
                 return self.__class__(segments[0]), segments[1:]
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], self.segment.encode('utf-8'))
+                return http.ok([('Content-Type', 'text/plain')],
+                               self.segment.encode('utf-8'))
         A = app.RestishApp(Resource(''))
         assert webtest.TestApp(A).get('/').body == ''
-        assert webtest.TestApp(A).get('/', extra_environ={'SCRIPT_NAME': '/base'}).body == ''
-        assert webtest.TestApp(A).get('/foo', extra_environ={'SCRIPT_NAME': '/base'}).body == 'foo'
+        assert webtest.TestApp(A).get(
+            '/', extra_environ={'SCRIPT_NAME': '/base'}).body == ''
+        assert webtest.TestApp(A).get(
+            '/foo', extra_environ={'SCRIPT_NAME': '/base'}).body == 'foo'
 
     def test_weird_path_segments(self):
         class Resource(resource.Resource):
@@ -143,11 +150,13 @@ class TestApp(unittest.TestCase):
             def resource_child(self, request, segments):
                 return self.__class__(segments[0]), segments[1:]
             def __call__(self, request):
-                return http.ok([('Content-Type', 'text/plain')], self.segment.encode('utf-8'))
+                return http.ok([('Content-Type', 'text/plain')],
+                               self.segment.encode('utf-8'))
         A = app.RestishApp(Resource(''))
         assert webtest.TestApp(A).get('/').body == ''
         assert webtest.TestApp(A).get('/foo').body == 'foo'
-        assert webtest.TestApp(A).get(url.URL('/').child('foo+bar@example.com').path).body == 'foo+bar@example.com'
+        assert webtest.TestApp(A).get(url.URL('/').child(
+            'foo+bar@example.com').path).body == 'foo+bar@example.com'
 
     def test_iterable_response_body(self):
         def resource(request):
@@ -158,7 +167,8 @@ class TestApp(unittest.TestCase):
                 yield "BANG!"
             return http.ok([('Content-Type', 'text/plain')], gen())
         A = app.RestishApp(resource)
-        assert webtest.TestApp(A).get('/').body == 'Three ... two ... one ... BANG!'
+        assert (webtest.TestApp(A).get('/').body ==
+                'Three ... two ... one ... BANG!')
 
 
 class CallableResource(object):
@@ -207,4 +217,3 @@ class TestResourceLike(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
