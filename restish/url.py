@@ -1,4 +1,8 @@
-import urlparse
+try:
+    from urllib.parse import urlsplit, urlunsplit
+except ImportError:
+    from urlparse import urlsplit, urlunsplit
+
 import urllib
 
 
@@ -110,13 +114,13 @@ class URL(str):
         Create a new URL instance from a str URL.
         """
         str.__init__(url)
-        self.parsed_url = urlparse.urlsplit(url)
+        self.parsed_url = urlsplit(url)
 
     def __eq__(self, other):
         if isinstance(other, URL):
             return self.parsed_url == other.parsed_url
         elif isinstance(other, str):
-            return self.parsed_url == urlparse.urlsplit(other)
+            return self.parsed_url == urlsplit(other)
         return False
 
     @property
@@ -182,7 +186,7 @@ class URL(str):
             query_ = query
         if fragment is not _UNSET:
             fragment_ = fragment
-        return self.__class__(urlparse.urlunsplit((scheme_, netloc_, path_,
+        return self.__class__(urlunsplit((scheme_, netloc_, path_,
                                                    query_, fragment_)))
 
     ## path manipulations ##
@@ -227,7 +231,7 @@ class URL(str):
         Create a url as if the current url was given by ``self`` and ``href``
         was clicked on
         """
-        scheme, netloc, path, query, fragment = urlparse.urlsplit(href)
+        scheme, netloc, path, query, fragment = urlsplit(href)
 
         # Return self if the click URL is empty.
         if (scheme, netloc, path, query, fragment) == ('', '', '', '', ''):

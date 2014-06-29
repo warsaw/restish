@@ -6,3 +6,4 @@ dist
 docs/doctrees
 *.egg
 *.egg-info
+.tox
