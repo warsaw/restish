@@ -27,13 +27,9 @@ class Resource(resource.Resource):
         # (i.e. bytes), but should also disallow unicodes.  The solution is to
         # always return a list of length 1 of these types.
         self.body = [body] if isinstance(body, _SCALARTYPE) else body
-        self.charset = charset
 
     def __call__(self, request):
-        ctype = 'text/plain'
-        if self.charset is not None:
-            ctype += "; charset='{}'".format(self.charset)
-        return http.ok([('Content-Type', ctype)], self.body)
+        return http.ok([('Content-Type', 'text/plain')], self.body)
 
 
 class TestStreaming(unittest.TestCase):
